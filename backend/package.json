@@ -3,10 +3,11 @@
   "version": "1.0.0",
   "main": "server.js",
   "scripts": {
+    "dev": "concurrently --kill-others-on-fail \"npm run server\" \"npm run client\"",
     "server": "nodemon server.js --ignore ../frontend",
     "client": "npm run dev --prefix ../frontend",
-    "start": "concurrently --kill-others-on-fail \"npm run server\" \"npm run client\"",
-    "start:prod": "npm run build && node server.js",
+    "start": "node server.js",
+    "start:prod": "node server.js",
     "build": "npm install --prefix ../frontend && npm run build --prefix ../frontend",
     "install-client": "npm install --prefix ../frontend"
   },
