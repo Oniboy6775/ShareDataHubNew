@@ -2,6 +2,7 @@ require("dotenv").config({ path: require("path").join(__dirname, ".env") });
 const express = require("express");
 const cors = require("cors");
 const mongoose = require("mongoose");
+const path = require("path");
 
 const app = express();
 app.use(cors());
@@ -22,7 +23,9 @@ app.get("/api/broadcasts", getActiveBroadcasts);
 const { getPublicTheme } = require("./Controllers/adminController");
 app.get("/api/theme", getPublicTheme);
 
-app.get("/", (req, res) => res.json({ msg: "Affiliate API running" }));
+const frontendDist = path.join(__dirname, "../frontend/dist");
+app.use(express.static(frontendDist));
+app.get("*", (req, res) => res.sendFile(path.join(frontendDist, "index.html")));
 
 const PORT = process.env.PORT || 5001;
 
