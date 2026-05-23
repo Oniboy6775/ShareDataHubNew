@@ -1,0 +1,40 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+/* Default theme — overridden at runtime by ThemeContext from DB settings */
+:root {
+  --tw-primary:   99 102 241;   /* #6366f1 */
+  --tw-secondary: 139 92 246;   /* #8b5cf6 */
+  --tw-dark:      26 32 53;     /* #1a2035 */
+  --tw-darker:    16 19 32;     /* #101320 */
+  --tw-light:     245 245 245;  /* #f5f5f5 */
+}
+
+@layer base {
+  body {
+    @apply bg-gray-50 text-gray-800 antialiased;
+    margin: 0;
+  }
+  #root {
+    min-height: 100vh;
+  }
+}
+
+@keyframes marquee-left {
+  0%   { transform: translateX(0); }
+  100% { transform: translateX(-50%); }
+}
+.animate-marquee { animation: marquee-left 32s linear infinite; }
+
+@keyframes float-y {
+  0%, 100% { transform: translateY(0px); }
+  50%       { transform: translateY(-10px); }
+}
+.animate-float { animation: float-y 4s ease-in-out infinite; }
+
+@keyframes float-y-slow {
+  0%, 100% { transform: translateY(0px); }
+  50%       { transform: translateY(-6px); }
+}
+.animate-float-slow { animation: float-y-slow 5s ease-in-out infinite; }
