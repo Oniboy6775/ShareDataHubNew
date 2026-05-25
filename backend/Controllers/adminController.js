@@ -337,24 +337,31 @@ const getPublicTheme = async (req, res) => {
 // ─── Dashboard summary ────────────────────────────────────────────────────────
 const getDashboardSummary = async (req, res) => {
   try {
-    const [totalUsers, totalTx, successTx, failedTx, pendingTx] = await Promise.all([
-      User.countDocuments({ userType: { $ne: "admin" } }),
-      Transaction.countDocuments(),
+    const now = new Date();
+    const startOfToday = new Date(now); startOfToday.setHours(0, 0, 0, 0);
+    const startOfMonth = new Date(now.getFullYear(), now.getMonth(), 1);
+
+    const gbAgg = (from) => Transaction.aggregate([
+      { $match: { trans_Type: "data", trans_Status: "success", createdAt: { $gte: from } } },
+      { $group: { _id: null, gb: { $sum: "$trans_volume_ratio" } } },
+    ]);
+
+    const [usersToday, successTx, failedTx, pendingTx, gbToday, gbMonth] = await Promise.all([
+      User.countDocuments({ userType: { $ne: "admin" }, createdAt: { $gte: startOfToday } }),
       Transaction.countDocuments({ trans_Status: "success" }),
       Transaction.countDocuments({ trans_Status: "failed" }),
       Transaction.countDocuments({ trans_Status: "processing" }),
+      gbAgg(startOfToday),
+      gbAgg(startOfMonth),
     ]);
-    const revenue = await Transaction.aggregate([
-      { $match: { trans_Status: "success" } },
-      { $group: { _id: null, total: { $sum: "$trans_profit" } } },
-    ]);
+
     res.status(200).json({
-      totalUsers,
-      totalTx,
+      usersToday,
       successTx,
       failedTx,
       pendingTx,
-      totalRevenue: revenue[0]?.total || 0,
+      gbSoldToday: gbToday[0]?.gb || 0,
+      gbSoldThisMonth: gbMonth[0]?.gb || 0,
     });
   } catch (e) {
     res.status(500).json({ msg: "Something went wrong" });

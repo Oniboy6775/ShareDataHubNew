@@ -33,7 +33,9 @@ const start = async () => {
   try {
     await mongoose.connect(process.env.MONGODB_URI);
     console.log("DB connected");
-    app.listen(PORT, () => console.log(`Affiliate backend running on port ${PORT}`));
+    app.listen(PORT, () =>
+      console.log(`Affiliate backend running on port ${PORT}`),
+    );
   } catch (e) {
     console.error(e.message);
     process.exit(1);
