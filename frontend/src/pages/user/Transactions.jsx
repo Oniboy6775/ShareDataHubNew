@@ -63,29 +63,33 @@ export default function Transactions() {
               <Table.Head>
                 <Table.Row>
                   <Table.Th>Date</Table.Th>
-                  <Table.Th>Type</Table.Th>
+                  <Table.Th>Status</Table.Th>
                   <Table.Th>Details</Table.Th>
                   <Table.Th>Amount</Table.Th>
-                  <Table.Th>Status</Table.Th>
                 </Table.Row>
               </Table.Head>
               <Table.Body>
-                {txs.map(tx => (
-                  <Table.Row key={tx._id} className="cursor-pointer" onClick={() => setDetail(tx)}>
+                {txs.map(tx => {
+                  const rowBg =
+                    tx.trans_Status === 'failed'     ? 'bg-red-50' :
+                    tx.trans_Status === 'processing' ? 'bg-yellow-50' :
+                    tx.trans_Status === 'pending'    ? 'bg-yellow-50' : ''
+                  return (
+                  <Table.Row key={tx._id} className={`cursor-pointer ${rowBg}`} onClick={() => setDetail(tx)}>
                     <Table.Td className="text-xs text-gray-500 whitespace-nowrap">
                       {new Date(tx.trans_Date || tx.createdAt).toLocaleDateString()}
                     </Table.Td>
-                    <Table.Td className="capitalize">{tx.trans_Type}</Table.Td>
+                    <Table.Td>
+                      <Badge variant={statusVariant[tx.trans_Status] || 'default'}>{tx.trans_Status}</Badge>
+                    </Table.Td>
                     <Table.Td className="text-xs text-gray-500">
                       {tx.trans_Network && <span className="mr-1">{tx.trans_Network}</span>}
                       {tx.phone_number}
                     </Table.Td>
                     <Table.Td className="font-medium">{naira(tx.trans_amount)}</Table.Td>
-                    <Table.Td>
-                      <Badge variant={statusVariant[tx.trans_Status] || 'default'}>{tx.trans_Status}</Badge>
-                    </Table.Td>
                   </Table.Row>
-                ))}
+                  )
+                })}
               </Table.Body>
             </Table>
 

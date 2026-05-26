@@ -5,14 +5,12 @@ import { naira } from '../../services/api'
 import { useTheme } from '../../context/ThemeContext'
 import Card from '../../components/ui/Card'
 import Spinner from '../../components/ui/Spinner'
-import { Users, Receipt, CheckCircle, XCircle, Clock, TrendingUp } from 'lucide-react'
+import { UserPlus, TrendingUp, Database } from 'lucide-react'
 
 const periods = [
-  { key: 'today',     label: 'Today'    },
-  { key: 'yesterday', label: 'Yesterday'},
-  { key: 'days7',     label: '7 Days'   },
-  { key: 'days30',    label: '30 Days'  },
-  { key: 'allTime',   label: 'All Time' },
+  { key: 'today',     label: 'Today'      },
+  { key: 'yesterday', label: 'Yesterday'  },
+  { key: 'days30',    label: 'This Month' },
 ]
 
 const formatHour = (h) => {
@@ -45,7 +43,6 @@ const CHART_VIEWS = [
   { key: 'yesterday', label: 'Yesterday' },
   { key: 'days7',     label: '7 Days'    },
   { key: 'days30',    label: '30 Days'   },
-  { key: 'allTime',   label: 'All Time'  },
 ]
 
 export default function AdminDashboard() {
@@ -65,13 +62,12 @@ export default function AdminDashboard() {
 
   if (isLoading) return <div className="flex justify-center py-16"><Spinner size="lg" /></div>
 
+  const fmtGb = (v) => `${(v ?? 0).toFixed(2)} GB`
+
   const stats = [
-    { label: 'Total Users',        value: data?.totalUsers ?? 0,          icon: Users,       color: 'bg-blue-50 text-blue-600'     },
-    { label: 'Total Transactions', value: data?.totalTx ?? 0,             icon: Receipt,     color: 'bg-purple-50 text-purple-600' },
-    { label: 'Successful',         value: data?.successTx ?? 0,           icon: CheckCircle, color: 'bg-green-50 text-green-600'   },
-    { label: 'Failed',             value: data?.failedTx ?? 0,            icon: XCircle,     color: 'bg-red-50 text-red-600'       },
-    { label: 'Processing',         value: data?.pendingTx ?? 0,           icon: Clock,       color: 'bg-yellow-50 text-yellow-600' },
-    { label: 'Total Revenue',      value: naira(data?.totalRevenue ?? 0),  icon: TrendingUp,  color: 'bg-emerald-50 text-emerald-600'},
+    { label: 'New Users Today',   value: data?.usersToday ?? 0,        icon: UserPlus, color: 'bg-blue-50 text-blue-600'      },
+    { label: 'GB Sold Today',     value: fmtGb(data?.gbSoldToday),     icon: Database, color: 'bg-purple-50 text-purple-600'  },
+    { label: 'GB Sold This Month',value: fmtGb(data?.gbSoldThisMonth), icon: Database, color: 'bg-emerald-50 text-emerald-600'},
   ]
 
   // Build chart data per view

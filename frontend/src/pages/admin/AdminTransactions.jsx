@@ -85,26 +85,34 @@ export default function AdminTransactions() {
                 <Table.Row>
                   <Table.Th>Date</Table.Th>
                   <Table.Th>User</Table.Th>
-                  <Table.Th>Type</Table.Th>
+                  <Table.Th>Status</Table.Th>
                   <Table.Th>Details</Table.Th>
                   <Table.Th>Amount</Table.Th>
                   <Table.Th>Profit</Table.Th>
-                  <Table.Th>Status</Table.Th>
                   <Table.Th>Action</Table.Th>
                 </Table.Row>
               </Table.Head>
               <Table.Body>
-                {txs.map(tx => (
+                {txs.map(tx => {
+                  const rowBg =
+                    tx.trans_Status === 'failed'     ? 'bg-red-50' :
+                    tx.trans_Status === 'processing' ? 'bg-yellow-50' :
+                    tx.trans_Status === 'pending'    ? 'bg-yellow-50' : ''
+                  return (
                   <Table.Row
                     key={tx._id}
-                    className="cursor-pointer"
+                    className={`cursor-pointer ${rowBg}`}
                     onClick={() => setDetail(tx)}
                   >
                     <Table.Td className="text-xs text-gray-500 whitespace-nowrap">
                       {new Date(tx.trans_Date || tx.createdAt).toLocaleDateString()}
                     </Table.Td>
                     <Table.Td className="text-sm">{tx.trans_UserName}</Table.Td>
-                    <Table.Td className="capitalize text-sm">{tx.trans_Type}</Table.Td>
+                    <Table.Td>
+                      <Badge variant={statusVariant[tx.trans_Status] || 'default'}>
+                        {tx.trans_Status}
+                      </Badge>
+                    </Table.Td>
                     <Table.Td className="text-xs text-gray-500">
                       {tx.trans_Network && <span className="mr-1">{tx.trans_Network}</span>}
                       {tx.phone_number}
@@ -114,17 +122,13 @@ export default function AdminTransactions() {
                       {tx.trans_profit > 0 ? `+${naira(tx.trans_profit)}` : tx.trans_Status === 'success' ? naira(0) : '—'}
                     </Table.Td>
                     <Table.Td>
-                      <Badge variant={statusVariant[tx.trans_Status] || 'default'}>
-                        {tx.trans_Status}
-                      </Badge>
-                    </Table.Td>
-                    <Table.Td>
                       {tx.trans_Status === 'success' && (
                         <Button size="sm" variant="danger" onClick={(e) => openRefund(e, tx)}>Refund</Button>
                       )}
                     </Table.Td>
                   </Table.Row>
-                ))}
+                  )
+                })}
               </Table.Body>
             </Table>
             {pages > 1 && (

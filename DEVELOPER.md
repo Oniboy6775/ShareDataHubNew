@@ -6,18 +6,18 @@ A white-label reseller platform built on top of a main data/airtime provider. Ea
 
 ## Tech Stack
 
-| Layer | Technology |
-|---|---|
-| Backend | Node.js + Express, CommonJS |
-| Database | MongoDB via Mongoose |
-| Frontend | React 19, Vite, Tailwind CSS v3 |
-| State / fetching | TanStack Query v5 |
-| Auth tokens | JWT (30-day) + `x-auth-token` header |
-| API auth | Bearer token looked up against `user.apiToken` |
-| Payments | Monnify (card/bank transfer) + BillStack (dedicated virtual accounts) |
-| Notifications | In-app + optional SMTP email |
-| Icons | lucide-react |
-| Toasts | react-hot-toast |
+| Layer            | Technology                                                            |
+| ---------------- | --------------------------------------------------------------------- |
+| Backend          | Node.js + Express, CommonJS                                           |
+| Database         | MongoDB via Mongoose                                                  |
+| Frontend         | React 19, Vite, Tailwind CSS v3                                       |
+| State / fetching | TanStack Query v5                                                     |
+| Auth tokens      | JWT (30-day) + `x-auth-token` header                                  |
+| API auth         | Bearer token looked up against `user.apiToken`                        |
+| Payments         | Monnify (card/bank transfer) + BillStack (dedicated virtual accounts) |
+| Notifications    | In-app + optional SMTP email                                          |
+| Icons            | lucide-react                                                          |
+| Toasts           | react-hot-toast                                                       |
 
 ---
 
@@ -172,10 +172,12 @@ Frontend: `http://localhost:5173` (Vite proxies `/api` → `5001`)
 Two mechanisms, both handled by `backend/Middleware/auth.js`:
 
 **Session users (browser)**
+
 - Login returns a JWT, stored in localStorage as `affiliate_token`
 - Every request sends `x-auth-token: <jwt>` header
 
 **API users (external integrations)**
+
 - User generates an `apiToken` from the API Docs page
 - Requests send `Authorization: Bearer <apiToken>`
 - Middleware looks up the token in the `User` collection, mints a temporary JWT, and proceeds
@@ -188,12 +190,12 @@ The same `auth` middleware handles both transparently.
 
 Each user has a `userType` that determines which price they pay for a plan:
 
-| userType | Price field used |
-|---|---|
-| `user` | `plan.sellingPrice` |
-| `reseller` | `plan.resellerPrice` |
-| `api user` | `plan.apiPrice` |
-| `admin` | cost price (no margin) |
+| userType   | Price field used       |
+| ---------- | ---------------------- |
+| `user`     | `plan.sellingPrice`    |
+| `reseller` | `plan.resellerPrice`   |
+| `api user` | `plan.apiPrice`        |
+| `admin`    | cost price (no margin) |
 
 Special pricing: if a user has `isSpecial: true`, the admin can override individual plan prices via `user.specialPrices[]`. This takes precedence over the tier price.
 
@@ -204,7 +206,8 @@ Special pricing: if a user has `isSpecial: true`, the admin can override individ
 Plans come from the main platform. Admin triggers sync from **Admin > Plans > Sync**.
 
 `adminController.syncPlans`:
-- Fetches all plans from `MAIN_PLATFORM_URL/plan` 
+
+- Fetches all plans from `MAIN_PLATFORM_URL/plan`
 - Upserts each plan by `planId` using `$setOnInsert` for prices and `isAvailable`
 - **Important:** `sellingPrice`, `resellerPrice`, `apiPrice`, and `isAvailable` are in `$setOnInsert` — they are only set on the very first insert. After that, syncing never overwrites admin-set prices or the enabled/disabled state.
 - Only `costPrice`, `network`, `planName`, `planType`, `planCategory` are updated on every sync (in `$set`).
@@ -246,6 +249,7 @@ CSS custom properties (`--color-primary`, etc.) are set on `document.documentEle
 One GitHub repo → many Render services, each with its own env vars.
 
 **Frontend (Static Site)**
+
 ```
 Build command:  npm run build
 Publish dir:    dist
@@ -254,6 +258,7 @@ Publish dir:    dist
 Set per-client `VITE_*` env vars in the Render dashboard. Each build is isolated and bakes in the correct theme.
 
 **Backend (Web Service)**
+
 ```
 Start command:  node server.js
 ```
@@ -313,6 +318,7 @@ GET    /api/theme                         — public, no auth, theme overrides
 ## Frontend Patterns
 
 **Adding a new page**
+
 1. Create `src/pages/user/MyPage.jsx`
 2. Import and add `<Route path="/my-page" element={<MyPage />} />` inside the `PrivateRoute` block in `App.jsx`
 3. Add a nav entry in `Sidebar.jsx` `userNav` array
@@ -325,14 +331,16 @@ Always use TanStack Query. The `QueryClient` is configured with `staleTime: 30_0
 
 ```js
 const { data, isLoading } = useQuery({
-  queryKey: ['my-key'],
-  queryFn: () => myService.getData().then(r => r.data),
-})
+  queryKey: ["my-key"],
+  queryFn: () => myService.getData().then((r) => r.data),
+});
 
 const mutation = useMutation({
   mutationFn: (payload) => myService.postData(payload),
-  onSuccess: () => { queryClient.invalidateQueries({ queryKey: ['my-key'] }) },
-})
+  onSuccess: () => {
+    queryClient.invalidateQueries({ queryKey: ["my-key"] });
+  },
+});
 ```
 
 **Phone input with contact picker**
@@ -357,10 +365,10 @@ const [contactName, setContactName] = useState('')
 
 ## Currently Disabled Features
 
-| Feature | Where to re-enable |
-|---|---|
+| Feature                | Where to re-enable                                                        |
+| ---------------------- | ------------------------------------------------------------------------- |
 | Cable TV purchase page | `App.jsx` line ~75, `Sidebar.jsx` `userNav`, `Dashboard.jsx` `quickLinks` |
-| Cable TV API docs | `ApiDocs.jsx` — sidebar entry + section both commented |
+| Cable TV API docs      | `ApiDocs.jsx` — sidebar entry + section both commented                    |
 
 Search for `// ` + the feature name to find all comment-out points.
 
@@ -394,6 +402,7 @@ Search for `// ` + the feature name to find all comment-out points.
 ## Network Logo Images
 
 Place PNG files at `frontend/public/networks/`:
+
 - `mtn.png`
 - `glo.png`
 - `airtel.png`

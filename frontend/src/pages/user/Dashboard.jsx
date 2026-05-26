@@ -8,7 +8,7 @@ import { naira } from '../../services/api'
 import Card from '../../components/ui/Card'
 import Badge from '../../components/ui/Badge'
 import Spinner from '../../components/ui/Spinner'
-import { Wifi, Phone, Zap, Tv, CreditCard, TrendingUp, Copy, Building2 } from 'lucide-react'
+import { Wifi, Phone, Zap, Tv, CreditCard, List, Copy, Building2 } from 'lucide-react'
 import toast from 'react-hot-toast'
 
 const statusVariant = { success: 'success', failed: 'danger', processing: 'warning', pending: 'warning', refunded: 'info' }
@@ -18,8 +18,8 @@ const quickLinks = [
   { to: '/buy/airtime',     icon: Phone, label: 'Airtime',    color: 'bg-green-50 text-green-600' },
   { to: '/buy/electricity', icon: Zap,   label: 'Electricity',color: 'bg-yellow-50 text-yellow-600' },
   // { to: '/buy/cable',       icon: Tv,    label: 'Cable TV',   color: 'bg-purple-50 text-purple-600' },
-  { to: '/fund-wallet',     icon: CreditCard, label: 'Fund',  color: 'bg-pink-50 text-pink-600' },
-  { to: '/earnings',        icon: TrendingUp, label: 'Earnings', color: 'bg-orange-50 text-orange-600' },
+  { to: '/fund-wallet',     icon: CreditCard, label: 'Fund',         color: 'bg-pink-50 text-pink-600' },
+  { to: '/transactions',    icon: List,       label: 'Transactions', color: 'bg-orange-50 text-orange-600' },
 ]
 
 function AccountNumberTabs({ accounts, primaryColor }) {
@@ -162,19 +162,16 @@ export default function Dashboard() {
 
   return (
     <div className="space-y-6">
+      <div>
+        <h1 className="text-2xl font-bold text-gray-900">Welcome back, {user?.userName} 👋</h1>
+        <p className="text-sm text-gray-500 mt-0.5">Here's what's happening with your account today.</p>
+      </div>
       <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
         <Card className="p-5">
           <p className="text-sm text-gray-500 mb-1">Wallet Balance</p>
           <p className="text-3xl font-bold text-gray-900">{naira(user?.balance ?? 0)}</p>
           <Link to="/fund-wallet" className="mt-3 inline-block text-xs text-primary font-medium hover:underline">
             + Add funds
-          </Link>
-        </Card>
-        <Card className="p-5">
-          <p className="text-sm text-gray-500 mb-1">Earnings Balance</p>
-          <p className="text-3xl font-bold text-gray-900">{naira(user?.earningBalance ?? 0)}</p>
-          <Link to="/earnings" className="mt-3 inline-block text-xs text-primary font-medium hover:underline">
-            View details
           </Link>
         </Card>
       </div>
