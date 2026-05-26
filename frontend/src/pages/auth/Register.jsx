@@ -18,15 +18,21 @@ export default function Register() {
     email: '',
     phoneNumber: '',
     password: '',
+    confirmPassword: '',
     referralCode: params.get('ref') || '',
   })
   const [loading, setLoading] = useState(false)
 
   const handleSubmit = async (e) => {
     e.preventDefault()
+    if (form.password !== form.confirmPassword) {
+      toast.error('Passwords do not match')
+      return
+    }
     setLoading(true)
     try {
-      const { data } = await authService.register(form)
+      const { confirmPassword, ...payload } = form
+      const { data } = await authService.register(payload)
       login(data.token, data.user)
       toast.success(data.msg || 'Account created!')
       navigate('/dashboard')
@@ -56,6 +62,7 @@ export default function Register() {
             <Input label="Email" type="email" placeholder="you@example.com" value={form.email} onChange={set('email')} required />
             <Input label="Phone number" placeholder="08012345678" value={form.phoneNumber} onChange={set('phoneNumber')} required />
             <Input label="Password" type="password" placeholder="••••••••" value={form.password} onChange={set('password')} required minLength={6} />
+            <Input label="Confirm password" type="password" placeholder="••••••••" value={form.confirmPassword} onChange={set('confirmPassword')} required minLength={6} />
             <Input label="Referral code (optional)" placeholder="username" value={form.referralCode} onChange={set('referralCode')} />
             <Button type="submit" className="w-full" loading={loading}>
               Create account
