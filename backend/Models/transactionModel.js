@@ -5,6 +5,7 @@ const transactionSchema = new mongoose.Schema({
   trans_By: { type: mongoose.Schema.Types.ObjectId, ref: "User" },
   trans_UserName: { type: String },
   trans_Type: { type: String },
+  trans_plan: { type: String, default: "" },
   trans_Network: { type: String },
   phone_number: { type: String },
   trans_amount: { type: Number },

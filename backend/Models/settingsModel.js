@@ -10,6 +10,7 @@ const settingsSchema = new mongoose.Schema({
   themeLogoUrl:       { type: String, default: "" },
   themeSupportPhone:  { type: String, default: "" },
   themeChannelLink:   { type: String, default: "" },
+  themeNavbar:        { type: String, default: "" },
   themePrimary:       { type: String, default: "" },
   themeSecondary:     { type: String, default: "" },
   themeDark:          { type: String, default: "" },

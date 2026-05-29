@@ -12,11 +12,13 @@ const {
   getDashboardSummary, getProfitAnalytics,
   createBroadcast, getBroadcasts, getActiveBroadcasts, toggleBroadcast, deleteBroadcast,
   resetUserPin, resetUserPassword,
+  getMainPlatformBalance,
 } = require("../Controllers/adminController");
 
 router.use(auth, isAdmin);
 
 router.get("/dashboard", getDashboardSummary);
+router.get("/platform-balance", getMainPlatformBalance);
 router.get("/analytics/profit", getProfitAnalytics);
 
 router.get("/users", getUsers);

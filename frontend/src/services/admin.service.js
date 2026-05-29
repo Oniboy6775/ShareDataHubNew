@@ -19,6 +19,7 @@ export const adminService = {
   updateSettings: (d) => api.patch("/admin/settings", d),
   setSpecialPricing: (id, d) => api.patch(`/admin/users/${id}/special-pricing`, d),
   getProfitAnalytics: () => api.get("/admin/analytics/profit"),
+  getPlatformBalance: () => api.get("/admin/platform-balance"),
   getBroadcasts: () => api.get("/admin/broadcasts"),
   createBroadcast: (d) => api.post("/admin/broadcasts", d),
   toggleBroadcast: (id) => api.patch(`/admin/broadcasts/${id}/toggle`),

@@ -298,7 +298,7 @@ const updateSettings = async (req, res) => {
   const allowed = [
     "registrationBonus", "mainPlatformApiKey", "mainPlatformUrl", "commissionPerPlan",
     "themeSiteName", "themeLogoUrl", "themeSupportPhone", "themeChannelLink",
-    "themePrimary", "themeSecondary", "themeDark", "themeDarker", "themeLight",
+    "themeNavbar", "themePrimary", "themeSecondary", "themeDark", "themeDarker", "themeLight",
     "monnifyApiKey", "monnifySecretKey", "monnifyContractCode", "monnifyBaseUrl", "frontendUrl",
     "smtpHost", "smtpPort", "smtpUser", "smtpPass", "smtpFrom",
     "billstackApi", "billstackSecret", "billstackBanks",
@@ -323,6 +323,7 @@ const getPublicTheme = async (req, res) => {
       channelLink:   s.themeChannelLink   || null,
       googleFormUrl:   s.googleFormUrl      || null,
       billstackBanks:  s.billstackBanks    || "PALMPAY,MONIEPOINT,WEMA",
+      navbar:        s.themeNavbar        || null,
       primary:       s.themePrimary       || null,
       secondary:     s.themeSecondary     || null,
       dark:          s.themeDark          || null,
@@ -542,6 +543,21 @@ const resetUserPassword = async (req, res) => {
   }
 };
 
+const getMainPlatformBalance = async (req, res) => {
+  try {
+    const settings = await Settings.getSingleton();
+    if (!settings.mainPlatformUrl || !settings.mainPlatformApiKey)
+      return res.status(200).json({ balance: null, error: "Main platform not configured" });
+    const { data } = await axios.get(`${settings.mainPlatformUrl}/user`, {
+      headers: { Authorization: `Bearer ${settings.mainPlatformApiKey}` },
+    });
+    const balance = data?.balance ?? data?.wallet ?? data?.data?.balance ?? data?.user?.balance ?? null;
+    res.status(200).json({ balance });
+  } catch (e) {
+    res.status(200).json({ balance: null, error: "Failed to fetch platform balance" });
+  }
+};
+
 module.exports = {
   getUsers, updateUser, creditUser, setSpecialPricing,
   getTransactions, refundTransaction,
@@ -554,4 +570,5 @@ module.exports = {
   createBroadcast, getBroadcasts, getActiveBroadcasts, toggleBroadcast, deleteBroadcast,
   getPublicTheme,
   resetUserPin, resetUserPassword,
+  getMainPlatformBalance,
 };

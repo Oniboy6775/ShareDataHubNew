@@ -31,6 +31,7 @@ import AdminNotifications from './pages/admin/AdminNotifications'
 import AdminSettings from './pages/admin/AdminSettings'
 import AdminUserPricing from './pages/admin/AdminUserPricing'
 import AdminBroadcast from './pages/admin/AdminBroadcast'
+import AdminTransfer from './pages/admin/AdminTransfer'
 
 function PrivateRoute({ children }) {
   const { user, loading } = useAuth()
@@ -90,6 +91,7 @@ export default function App() {
           <Route path="/admin/settings"           element={<AdminSettings />} />
           <Route path="/admin/users/:id/pricing"  element={<AdminUserPricing />} />
           <Route path="/admin/broadcast"          element={<AdminBroadcast />} />
+          <Route path="/admin/transfer"           element={<AdminTransfer />} />
         </Route>
 
         <Route path="*" element={<Navigate to="/" replace />} />

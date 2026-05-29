@@ -20,6 +20,7 @@ const generateReceipt = async ({
     trans_By: userId,
     trans_UserName: userName,
     trans_Type: type,
+    trans_plan: planName || "",
     trans_Network: planNetwork,
     phone_number: phoneNumber,
     trans_amount: amountToCharge,

@@ -5,7 +5,7 @@ import { naira } from '../../services/api'
 import { useTheme } from '../../context/ThemeContext'
 import Card from '../../components/ui/Card'
 import Spinner from '../../components/ui/Spinner'
-import { UserPlus, TrendingUp, Database } from 'lucide-react'
+import { UserPlus, TrendingUp, Database, Globe } from 'lucide-react'
 
 const periods = [
   { key: 'today',     label: 'Today'      },
@@ -60,14 +60,21 @@ export default function AdminDashboard() {
     refetchInterval: 60_000,
   })
 
+  const { data: platformData } = useQuery({
+    queryKey: ['platform-balance'],
+    queryFn: () => adminService.getPlatformBalance().then(r => r.data),
+    refetchInterval: 120_000,
+  })
+
   if (isLoading) return <div className="flex justify-center py-16"><Spinner size="lg" /></div>
 
   const fmtGb = (v) => `${(v ?? 0).toFixed(2)} GB`
 
   const stats = [
-    { label: 'New Users Today',   value: data?.usersToday ?? 0,        icon: UserPlus, color: 'bg-blue-50 text-blue-600'      },
-    { label: 'GB Sold Today',     value: fmtGb(data?.gbSoldToday),     icon: Database, color: 'bg-purple-50 text-purple-600'  },
-    { label: 'GB Sold This Month',value: fmtGb(data?.gbSoldThisMonth), icon: Database, color: 'bg-emerald-50 text-emerald-600'},
+    { label: 'New Users Today',    value: data?.usersToday ?? 0,                                                     icon: UserPlus, color: 'bg-blue-50 text-blue-600'      },
+    { label: 'GB Sold Today',      value: fmtGb(data?.gbSoldToday),                                                  icon: Database, color: 'bg-purple-50 text-purple-600'  },
+    { label: 'GB Sold This Month', value: fmtGb(data?.gbSoldThisMonth),                                              icon: Database, color: 'bg-emerald-50 text-emerald-600'},
+    { label: 'Platform Balance',   value: platformData?.balance != null ? naira(platformData.balance) : '—',          icon: Globe,    color: 'bg-sky-50 text-sky-600'        },
   ]
 
   // Build chart data per view

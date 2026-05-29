@@ -62,10 +62,11 @@ export default function Transactions() {
             <Table>
               <Table.Head>
                 <Table.Row>
-                  <Table.Th>Date</Table.Th>
+                  <Table.Th>Bal. After</Table.Th>
                   <Table.Th>Status</Table.Th>
                   <Table.Th>Details</Table.Th>
                   <Table.Th>Amount</Table.Th>
+                  <Table.Th>Date</Table.Th>
                 </Table.Row>
               </Table.Head>
               <Table.Body>
@@ -76,17 +77,20 @@ export default function Transactions() {
                     tx.trans_Status === 'pending'    ? 'bg-yellow-50' : ''
                   return (
                   <Table.Row key={tx._id} className={`cursor-pointer ${rowBg}`} onClick={() => setDetail(tx)}>
-                    <Table.Td className="text-xs text-gray-500 whitespace-nowrap">
-                      {new Date(tx.trans_Date || tx.createdAt).toLocaleDateString()}
-                    </Table.Td>
+                    <Table.Td className="font-semibold text-gray-700">{tx.balance_After != null ? naira(tx.balance_After) : '—'}</Table.Td>
                     <Table.Td>
                       <Badge variant={statusVariant[tx.trans_Status] || 'default'}>{tx.trans_Status}</Badge>
                     </Table.Td>
                     <Table.Td className="text-xs text-gray-500">
-                      {tx.trans_Network && <span className="mr-1">{tx.trans_Network}</span>}
-                      {tx.phone_number}
+                      {tx.trans_plan
+                        ? <span>{tx.trans_plan}</span>
+                        : <>{tx.trans_Network && <span className="mr-1">{tx.trans_Network}</span>}{tx.phone_number}</>
+                      }
                     </Table.Td>
                     <Table.Td className="font-medium">{naira(tx.trans_amount)}</Table.Td>
+                    <Table.Td className="text-xs text-gray-500 whitespace-nowrap">
+                      {tx.trans_Date || new Date(tx.createdAt).toLocaleString()}
+                    </Table.Td>
                   </Table.Row>
                   )
                 })}

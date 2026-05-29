@@ -252,12 +252,6 @@ export default function BuyData() {
                 <span className="text-gray-500">Type</span>
                 <span className="font-semibold">{selectedPlan.planType}</span>
               </div>
-              <div className="flex justify-between border-t border-gray-200 pt-2">
-                <span className="text-gray-600 font-medium">Amount</span>
-                <span className="font-bold text-green-600 text-base">
-                  {naira(selectedPlan.price ?? selectedPlan.sellingPrice)}
-                </span>
-              </div>
             </div>
 
             <PhoneInput

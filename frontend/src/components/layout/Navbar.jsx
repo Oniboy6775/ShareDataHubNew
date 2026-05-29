@@ -3,10 +3,12 @@ import { Link } from 'react-router-dom'
 import { useQuery } from '@tanstack/react-query'
 import { adminService } from '../../services/admin.service'
 import { useAuth } from '../../context/AuthContext'
+import { useTheme } from '../../context/ThemeContext'
 import { naira } from '../../services/api'
 
 export default function Navbar({ onMenuClick }) {
   const { user } = useAuth()
+  const theme = useTheme()
   const isAdmin = user?.userType === 'admin'
 
   const { data } = useQuery({
@@ -17,7 +19,10 @@ export default function Navbar({ onMenuClick }) {
   })
 
   return (
-    <header className="h-16 bg-white border-b border-gray-100 flex items-center justify-between px-4 lg:px-6 sticky top-0 z-10">
+    <header
+      className="h-16 border-b border-gray-100 flex items-center justify-between px-4 lg:px-6 sticky top-0 z-10"
+      style={{ background: theme.colors.navbar || '#ffffff' }}
+    >
       <div className="flex items-center gap-3">
         <button onClick={onMenuClick} className="lg:hidden p-2 rounded-lg hover:bg-gray-100">
           <Menu size={20} />

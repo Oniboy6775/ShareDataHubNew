@@ -63,7 +63,7 @@ export default function AdminSettings() {
   const [form, setForm] = useState({ registrationBonus: '', mainPlatformUrl: '', mainPlatformApiKey: '', googleFormUrl: '' })
   const [themeForm, setThemeForm] = useState({
     themeSiteName: '', themeLogoUrl: '', themeSupportPhone: '', themeChannelLink: '',
-    themePrimary: '', themeSecondary: '', themeDark: '', themeDarker: '', themeLight: '',
+    themeNavbar: '', themePrimary: '', themeSecondary: '', themeDark: '', themeDarker: '', themeLight: '',
   })
   const [paymentForm, setPaymentForm] = useState({
     monnifyApiKey: '', monnifySecretKey: '', monnifyContractCode: '', monnifyBaseUrl: '', frontendUrl: '',
@@ -94,6 +94,7 @@ export default function AdminSettings() {
       themeLogoUrl:      data.themeLogoUrl      ?? '',
       themeSupportPhone: data.themeSupportPhone ?? '',
       themeChannelLink:  data.themeChannelLink  ?? '',
+      themeNavbar:       data.themeNavbar       ?? '',
       themePrimary:      data.themePrimary      ?? '',
       themeSecondary:    data.themeSecondary    ?? '',
       themeDark:         data.themeDark         ?? '',
@@ -269,6 +270,7 @@ export default function AdminSettings() {
             <div>
               <p className="text-sm font-medium text-gray-700 mb-3">Brand Colors</p>
               <div className="grid grid-cols-2 gap-4">
+                <ColorSwatch label="Navbar"     field="themeNavbar"    value={themeForm.themeNavbar}    onChange={setColor} />
                 <ColorSwatch label="Primary"    field="themePrimary"   value={themeForm.themePrimary}   onChange={setColor} />
                 <ColorSwatch label="Secondary"  field="themeSecondary" value={themeForm.themeSecondary} onChange={setColor} />
                 <ColorSwatch label="Sidebar"    field="themeDark"      value={themeForm.themeDark}      onChange={setColor} />
@@ -298,6 +300,7 @@ export default function AdminSettings() {
               themeLogoUrl:      themeForm.themeLogoUrl,
               themeSupportPhone: themeForm.themeSupportPhone,
               themeChannelLink:  themeForm.themeChannelLink,
+              themeNavbar:       themeForm.themeNavbar,
               themePrimary:      themeForm.themePrimary,
               themeSecondary:    themeForm.themeSecondary,
               themeDark:         themeForm.themeDark,

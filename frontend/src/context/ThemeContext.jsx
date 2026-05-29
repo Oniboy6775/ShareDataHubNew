@@ -35,6 +35,7 @@ function buildOverrides(data) {
     channelLink: data.channelLink || defaultTheme.channelLink || "",
     googleFormUrl: data.googleFormUrl || "",
     colors: {
+      navbar: data.navbar || null,
       primary: data.primary || defaultTheme.colors.primary,
       secondary: data.secondary || defaultTheme.colors.secondary,
       dark: data.dark || defaultTheme.colors.dark,
@@ -42,6 +43,15 @@ function buildOverrides(data) {
       light: data.light || defaultTheme.colors.light,
     },
   };
+}
+
+function applyMeta(theme) {
+  document.title = theme.siteName || defaultTheme.siteName;
+  if (theme.logo) {
+    let link = document.querySelector("link[rel='icon']");
+    if (!link) { link = document.createElement('link'); link.rel = 'icon'; document.head.appendChild(link); }
+    link.href = theme.logo;
+  }
 }
 
 export function ThemeProvider({ children }) {
@@ -54,6 +64,7 @@ export function ThemeProvider({ children }) {
         const overrides = buildOverrides(data);
         setTheme(overrides);
         applyColors(overrides.colors);
+        applyMeta(overrides);
       })
       .catch(() => {
         applyColors(defaultTheme.colors);
@@ -67,6 +78,7 @@ export function ThemeProvider({ children }) {
       logoUrl: fields.themeLogoUrl || null,
       supportPhone: fields.themeSupportPhone || null,
       channelLink: fields.themeChannelLink || null,
+      navbar: fields.themeNavbar || null,
       primary: fields.themePrimary || null,
       secondary: fields.themeSecondary || null,
       dark: fields.themeDark || null,
@@ -75,6 +87,7 @@ export function ThemeProvider({ children }) {
     });
     setTheme(overrides);
     applyColors(overrides.colors);
+    applyMeta(overrides);
   };
 
   return (

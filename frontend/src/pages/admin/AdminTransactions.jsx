@@ -83,12 +83,13 @@ export default function AdminTransactions() {
             <Table>
               <Table.Head>
                 <Table.Row>
-                  <Table.Th>Date</Table.Th>
+                  <Table.Th>Bal. After</Table.Th>
                   <Table.Th>User</Table.Th>
                   <Table.Th>Status</Table.Th>
                   <Table.Th>Details</Table.Th>
                   <Table.Th>Amount</Table.Th>
                   <Table.Th>Profit</Table.Th>
+                  <Table.Th>Date</Table.Th>
                   <Table.Th>Action</Table.Th>
                 </Table.Row>
               </Table.Head>
@@ -104,9 +105,7 @@ export default function AdminTransactions() {
                     className={`cursor-pointer ${rowBg}`}
                     onClick={() => setDetail(tx)}
                   >
-                    <Table.Td className="text-xs text-gray-500 whitespace-nowrap">
-                      {new Date(tx.trans_Date || tx.createdAt).toLocaleDateString()}
-                    </Table.Td>
+                    <Table.Td className="font-semibold text-gray-700">{tx.balance_After != null ? naira(tx.balance_After) : '—'}</Table.Td>
                     <Table.Td className="text-sm">{tx.trans_UserName}</Table.Td>
                     <Table.Td>
                       <Badge variant={statusVariant[tx.trans_Status] || 'default'}>
@@ -114,12 +113,17 @@ export default function AdminTransactions() {
                       </Badge>
                     </Table.Td>
                     <Table.Td className="text-xs text-gray-500">
-                      {tx.trans_Network && <span className="mr-1">{tx.trans_Network}</span>}
-                      {tx.phone_number}
+                      {tx.trans_plan
+                        ? <span>{tx.trans_plan}</span>
+                        : <>{tx.trans_Network && <span className="mr-1">{tx.trans_Network}</span>}{tx.phone_number}</>
+                      }
                     </Table.Td>
                     <Table.Td className="font-medium">{naira(tx.trans_amount)}</Table.Td>
                     <Table.Td className={tx.trans_profit > 0 ? 'text-green-600 font-medium text-sm' : 'text-gray-400 text-sm'}>
                       {tx.trans_profit > 0 ? `+${naira(tx.trans_profit)}` : tx.trans_Status === 'success' ? naira(0) : '—'}
+                    </Table.Td>
+                    <Table.Td className="text-xs text-gray-500 whitespace-nowrap">
+                      {tx.trans_Date || new Date(tx.createdAt).toLocaleString()}
                     </Table.Td>
                     <Table.Td>
                       {tx.trans_Status === 'success' && (
