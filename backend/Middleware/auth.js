@@ -7,7 +7,7 @@ const auth = async (req, res, next) => {
     req?.headers?.authorization ||
     req?.headers?.apikey;
   let token = "";
-  console.log({ authHeader });
+  // console.log({ authHeader });
   if (
     authHeader &&
     (authHeader.startsWith("Bearer ") || authHeader.startsWith("Token "))
@@ -15,6 +15,8 @@ const auth = async (req, res, next) => {
     const candidate = authHeader.split(" ")[1];
     // console.log({ candidate });
     const user = await User.findOne({ apiToken: candidate });
+    console.log({ user });
+
     if (user) {
       token = jwt.sign(
         { userId: user._id, userType: user.userType },
@@ -35,7 +37,7 @@ const auth = async (req, res, next) => {
   try {
     const verified = jwt.verify(token, process.env.JWT_SECRET);
     req.user = verified;
-    console.log({ verified });
+    // console.log({ verified });
 
     next();
   } catch {
