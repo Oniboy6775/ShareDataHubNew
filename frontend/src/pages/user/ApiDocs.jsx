@@ -302,7 +302,7 @@ Authorization: Token YOUR_API_KEY`} />
         <Endpoint
           id="plans-list"
           method="GET"
-          path="/api/plans"
+          path="/api/v1/plans"
           title="List available plans"
           desc="Returns all available data plans. Prices are automatically resolved to your account tier (user / reseller / API user). Filter by network and plan type using query parameters."
           params={[
@@ -328,7 +328,7 @@ Authorization: Token YOUR_API_KEY`} />
     // ...
   ]
 }`}
-          curlExample={`curl -X GET "${BASE_URL_DISPLAY}/api/plans?network=MTN" \\
+          curlExample={`curl -X GET "${BASE_URL_DISPLAY}/api/v1/plans?network=MTN" \\
   -H "Authorization: Bearer YOUR_API_KEY"`}
         />
       </section>
@@ -343,11 +343,11 @@ Authorization: Token YOUR_API_KEY`} />
         <Endpoint
           id="buy-data-endpoint"
           method="POST"
-          path="/api/buy/data"
+          path="/api/v1/buy/data"
           title="Purchase a data bundle"
           desc="Deducts the plan price from your wallet and sends the data bundle to the specified phone number. The price is resolved based on your account type. Transaction is saved and a receipt is returned."
           params={[
-            { name: 'plan',           type: 'number',  required: true,  desc: 'Plan ID from /api/plans response' },
+            { name: 'plan',           type: 'number',  required: true,  desc: 'Plan ID from /api/v1/plans response' },
             { name: 'network',        type: 'string',  required: true,  desc: 'Network — MTN, GLO, AIRTEL, 9MOBILE' },
             { name: 'mobile_number',  type: 'string',  required: true,  desc: 'Recipient phone number e.g. 08012345678' },
             { name: 'transactionPin', type: 'string',  required: false, desc: 'Required if PIN is enabled on your account' },
@@ -372,7 +372,7 @@ Authorization: Token YOUR_API_KEY`} />
     "trans_Date": "Thu May 22 2025 12:00:00"
   }
 }`}
-          curlExample={`curl -X POST "${BASE_URL_DISPLAY}/api/buy/data" \\
+          curlExample={`curl -X POST "${BASE_URL_DISPLAY}/api/v1/buy/data" \\
   -H "Authorization: Bearer YOUR_API_KEY" \\
   -H "Content-Type: application/json" \\
   -d '{"plan":1,"network":"MTN","mobile_number":"08012345678"}'`}
@@ -389,7 +389,7 @@ Authorization: Token YOUR_API_KEY`} />
         <Endpoint
           id="buy-airtime-endpoint"
           method="POST"
-          path="/api/buy/airtime"
+          path="/api/v1/buy/airtime"
           title="Top up airtime"
           desc="Sends airtime of the specified amount to a phone number. The exact amount is deducted from your wallet — there is no markup on airtime."
           params={[
@@ -417,7 +417,7 @@ Authorization: Token YOUR_API_KEY`} />
     "balance_After": 4250
   }
 }`}
-          curlExample={`curl -X POST "${BASE_URL_DISPLAY}/api/buy/airtime" \\
+          curlExample={`curl -X POST "${BASE_URL_DISPLAY}/api/v1/buy/airtime" \\
   -H "Authorization: Bearer YOUR_API_KEY" \\
   -H "Content-Type: application/json" \\
   -d '{"network":"MTN","mobile_number":"08012345678","amount":500}'`}
@@ -434,7 +434,7 @@ Authorization: Token YOUR_API_KEY`} />
         <Endpoint
           id="validate-meter-endpoint"
           method="POST"
-          path="/api/buy/validateMeter"
+          path="/api/v1/buy/validateMeter"
           title="Validate electricity meter"
           desc="Validates a meter number before payment. Always call this first to confirm the meter exists and get the customer name to display to your user for confirmation."
           params={[
@@ -452,7 +452,7 @@ Authorization: Token YOUR_API_KEY`} />
   "customerName": "JOHN DOE",
   "meterNumber": "1234567890"
 }`}
-          curlExample={`curl -X POST "${BASE_URL_DISPLAY}/api/buy/validateMeter" \\
+          curlExample={`curl -X POST "${BASE_URL_DISPLAY}/api/v1/buy/validateMeter" \\
   -H "Authorization: Bearer YOUR_API_KEY" \\
   -H "Content-Type: application/json" \\
   -d '{"meterNumber":"1234567890","discoName":"EEDC","meterType":"prepaid"}'`}
@@ -460,7 +460,7 @@ Authorization: Token YOUR_API_KEY`} />
         <Endpoint
           id="buy-electricity-endpoint"
           method="POST"
-          path="/api/buy/electricity"
+          path="/api/v1/buy/electricity"
           title="Purchase electricity token"
           desc="Purchases a prepaid/postpaid electricity token and returns the token number. Always validate the meter number first using the /validateMeter endpoint."
           params={[
@@ -491,7 +491,7 @@ Authorization: Token YOUR_API_KEY`} />
     "apiResponse": "Token: 1234-5678-9012-3456"
   }
 }`}
-          curlExample={`curl -X POST "${BASE_URL_DISPLAY}/api/buy/electricity" \\
+          curlExample={`curl -X POST "${BASE_URL_DISPLAY}/api/v1/buy/electricity" \\
   -H "Authorization: Bearer YOUR_API_KEY" \\
   -H "Content-Type: application/json" \\
   -d '{"meterNumber":"1234567890","discoName":"EEDC","meterType":"prepaid","amount":5000,"phoneNumber":"08012345678"}'`}
@@ -508,7 +508,7 @@ Authorization: Token YOUR_API_KEY`} />
         <Endpoint
           id="buy-cable-endpoint"
           method="POST"
-          path="/api/buy/cable"
+          path="/api/v1/buy/cable"
           title="Renew cable TV subscription"
           desc="Renews a DSTV, GOtv, or Startimes subscription. Provide the smart card / IUC number and the plan code."
           params={[
@@ -534,7 +534,7 @@ Authorization: Token YOUR_API_KEY`} />
     "trans_Status": "success"
   }
 }`}
-          curlExample={`curl -X POST "${BASE_URL_DISPLAY}/api/buy/cable" \\
+          curlExample={`curl -X POST "${BASE_URL_DISPLAY}/api/v1/buy/cable" \\
   -H "Authorization: Bearer YOUR_API_KEY" \\
   -H "Content-Type: application/json" \\
   -d '{"cableName":"DSTV","cableNumber":"1234567890","plan":"CONFAM"}'`}
@@ -551,7 +551,7 @@ Authorization: Token YOUR_API_KEY`} />
         <Endpoint
           id="transactions-endpoint"
           method="GET"
-          path="/api/auth/transactions"
+          path="/api/v1/auth/transactions"
           title="List your transactions"
           desc="Returns a paginated list of all transactions for your account. Filter by status and type."
           params={[
@@ -579,13 +579,13 @@ Authorization: Token YOUR_API_KEY`} />
   "page": 1,
   "pages": 8
 }`}
-          curlExample={`curl -X GET "${BASE_URL_DISPLAY}/api/auth/transactions?page=1&type=data" \\
+          curlExample={`curl -X GET "${BASE_URL_DISPLAY}/api/v1/auth/transactions?page=1&type=data" \\
   -H "Authorization: Bearer YOUR_API_KEY"`}
         />
         <Endpoint
           id="profile-endpoint"
           method="GET"
-          path="/api/auth/profile"
+          path="/api/v1/auth/profile"
           title="Get account profile & balance"
           desc="Returns your account details including current wallet balance. Use this to check your balance before making purchases."
           params={[]}
@@ -602,7 +602,7 @@ Authorization: Token YOUR_API_KEY`} />
     ]
   }
 }`}
-          curlExample={`curl -X GET "${BASE_URL_DISPLAY}/api/auth/profile" \\
+          curlExample={`curl -X GET "${BASE_URL_DISPLAY}/api/v1/auth/profile" \\
   -H "Authorization: Bearer YOUR_API_KEY"`}
         />
       </section>

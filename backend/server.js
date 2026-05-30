@@ -8,20 +8,20 @@ const app = express();
 app.use(cors());
 app.use(express.json());
 
-app.use("/api/auth", require("./Routes/authRoutes"));
-app.use("/api/plans", require("./Routes/planRoutes"));
-app.use("/api/buy", require("./Routes/purchaseRoutes"));
-app.use("/api/webhook", require("./Routes/walletRoutes"));
-app.use("/api/wallet", require("./Routes/walletRoutes"));
-app.use("/api/admin", require("./Routes/adminRoutes"));
+app.use("/api/v1/auth", require("./Routes/authRoutes"));
+app.use("/api/v1/plans", require("./Routes/planRoutes"));
+app.use("/api/v1/buy", require("./Routes/purchaseRoutes"));
+app.use("/api/v1/webhook", require("./Routes/walletRoutes"));
+app.use("/api/v1/wallet", require("./Routes/walletRoutes"));
+app.use("/api/v1/admin", require("./Routes/adminRoutes"));
 
 // Public — active broadcasts shown to all logged-in users as banners
 const { getActiveBroadcasts } = require("./Routes/adminRoutes");
-app.get("/api/broadcasts", getActiveBroadcasts);
+app.get("/api/v1/broadcasts", getActiveBroadcasts);
 
 // Public — theme overrides (safe, no secrets)
 const { getPublicTheme } = require("./Controllers/adminController");
-app.get("/api/theme", getPublicTheme);
+app.get("/api/v1/theme", getPublicTheme);
 
 const frontendDist = path.join(__dirname, "../frontend/dist");
 app.use(express.static(frontendDist));
