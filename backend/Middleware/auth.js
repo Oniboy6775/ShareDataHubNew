@@ -4,13 +4,13 @@ const User = require("../Models/userModel");
 const auth = async (req, res, next) => {
   const authHeader = req?.headers?.authorization || req?.headers?.apikey;
   let token = "";
-  console.log({ authHeader });
+  // console.log({ authHeader });
   if (
     authHeader &&
     (authHeader.startsWith("Bearer ") || authHeader.startsWith("Token "))
   ) {
     const candidate = authHeader.split(" ")[1];
-    console.log({ candidate });
+    // console.log({ candidate });
     const user = await User.findOne({ apiToken: candidate });
     if (user) {
       token = jwt.sign(
@@ -32,6 +32,8 @@ const auth = async (req, res, next) => {
   try {
     const verified = jwt.verify(token, process.env.JWT_SECRET);
     req.user = verified;
+    console.log({ verified });
+
     next();
   } catch {
     return res
