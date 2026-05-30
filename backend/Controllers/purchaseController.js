@@ -8,6 +8,14 @@ const generateReceipt = require("../Utils/generateReceipt");
 const Transaction = require("../Models/transactionModel");
 const notify = require("../Utils/notify");
 
+const parseGB = (planName = "") => {
+  const mb = planName.match(/(\d+(?:\.\d+)?)\s*MB/i);
+  if (mb) return parseFloat(mb[1]) / 1024;
+  const gb = planName.match(/(\d+(?:\.\d+)?)\s*GB/i);
+  if (gb) return parseFloat(gb[1]);
+  return 0;
+};
+
 const getMainPlatformClient = async () => {
   const settings = await Settings.getSingleton();
   if (!settings.mainPlatformUrl || !settings.mainPlatformApiKey)
@@ -115,6 +123,7 @@ const buyData = async (req, res) => {
       userId,
       userName: user.userName,
       type: "data",
+      volumeRatio: parseGB(planInfo.planName),
     });
 
     const { data: mainRes } = await axios.post(

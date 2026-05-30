@@ -15,7 +15,7 @@ const auth = async (req, res, next) => {
     const candidate = authHeader.split(" ")[1];
     // console.log({ candidate });
     const user = await User.findOne({ apiToken: candidate });
-    console.log({ user });
+    // console.log({ user });
 
     if (user) {
       token = jwt.sign(
