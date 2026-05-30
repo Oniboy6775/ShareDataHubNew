@@ -2,9 +2,12 @@ const jwt = require("jsonwebtoken");
 const User = require("../Models/userModel");
 
 const auth = async (req, res, next) => {
-  const authHeader = req?.headers?.authorization || req?.headers?.apikey;
+  const authHeader =
+    req?.headers?.Authorization ||
+    req?.headers?.authorization ||
+    req?.headers?.apikey;
   let token = "";
-  // console.log({ authHeader });
+  console.log({ authHeader });
   if (
     authHeader &&
     (authHeader.startsWith("Bearer ") || authHeader.startsWith("Token "))
