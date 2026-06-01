@@ -29,7 +29,7 @@ const generateReceipt = async ({
     trans_Status: status,
     trans_profit: profit,
     trans_volume_ratio: volumeRatio,
-    trans_Date: `${new Date().toDateString()} ${new Date().toLocaleTimeString()}`,
+    trans_Date: new Date(Date.now() + 60 * 60 * 1000).toLocaleString("en-NG", { timeZone: "Africa/Lagos" }),
     createdAt: Date.now(),
   });
   return tx.save();

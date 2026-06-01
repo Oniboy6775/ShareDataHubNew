@@ -9,7 +9,7 @@ import Table from '../../components/ui/Table'
 import Button from '../../components/ui/Button'
 import Input from '../../components/ui/Input'
 import Spinner from '../../components/ui/Spinner'
-import { ArrowLeft } from 'lucide-react'
+import { ArrowLeft, Tag } from 'lucide-react'
 
 export default function AdminUserPricing() {
   const { id } = useParams()
@@ -23,8 +23,11 @@ export default function AdminUserPricing() {
 
   const { data: userData, isLoading: loadingUser } = useQuery({
     queryKey: ['admin-user', id],
-    queryFn: () => adminService.getUsers({ userId: id }).then(r => r.data.users?.[0]),
+    queryFn: () => adminService.getUserById(id).then(r => r.data.user),
   })
+
+  // Track which planIds already have a saved special price
+  const savedPlanIds = new Set((userData?.specialPrices || []).map(s => s.planId))
 
   useEffect(() => {
     if (userData?.specialPrices?.length) {
@@ -67,7 +70,15 @@ export default function AdminUserPricing() {
       <Card>
         <Card.Header>
           <div className="flex items-center justify-between">
-            <span>Plan Price Overrides</span>
+            <div className="flex items-center gap-2">
+              <span>Plan Price Overrides</span>
+              {savedPlanIds.size > 0 && (
+                <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-xs font-semibold bg-green-100 text-green-700">
+                  <Tag size={11} />
+                  {savedPlanIds.size} special {savedPlanIds.size === 1 ? 'price' : 'prices'} set
+                </span>
+              )}
+            </div>
             <Button size="sm" loading={saving} onClick={handleSave}>Save Pricing</Button>
           </div>
         </Card.Header>
@@ -75,32 +86,75 @@ export default function AdminUserPricing() {
           <Table.Head>
             <Table.Row>
               <Table.Th>Plan</Table.Th>
-              <Table.Th>Network</Table.Th>
-              <Table.Th>Default Price</Table.Th>
+              <Table.Th>Cost Price</Table.Th>
+              <Table.Th>
+                {userData?.userType === 'reseller' ? 'Reseller Price' :
+                 userData?.userType === 'api user' ? 'API Price' : 'Selling Price'}
+              </Table.Th>
               <Table.Th>Special Price (₦)</Table.Th>
+              <Table.Th>Profit</Table.Th>
             </Table.Row>
           </Table.Head>
           <Table.Body>
-            {plans.map(p => (
-              <Table.Row key={p._id}>
+            {plans.map(p => {
+              const hasSaved = savedPlanIds.has(p.planId)
+              const basePrice =
+                userData?.userType === 'reseller' ? (p.resellerPrice || p.sellingPrice) :
+                userData?.userType === 'api user'  ? (p.apiPrice     || p.sellingPrice) :
+                p.sellingPrice
+              const specialVal = overrides[p.planId] !== '' && overrides[p.planId] != null
+                ? Number(overrides[p.planId]) : null
+              const effectivePrice = specialVal ?? basePrice
+              const profit = p.costPrice ? effectivePrice - p.costPrice : null
+              return (
+              <Table.Row
+                key={p._id}
+                className={hasSaved ? 'border-l-4 border-l-green-400 bg-green-50/40' : ''}
+              >
                 <Table.Td>
-                  <p className="font-medium text-sm">{p.planName}</p>
-                  <p className="text-xs text-gray-400">{p.planType}</p>
+                  <div className="flex items-center gap-2 flex-wrap">
+                    <div>
+                      <div className="flex items-center gap-1.5">
+                        <span className="text-xs font-bold px-1.5 py-0.5 rounded bg-gray-100 text-gray-600">{p.network}</span>
+                        <p className="font-medium text-sm">{p.planName}</p>
+                      </div>
+                      <p className="text-xs text-gray-400 mt-0.5">
+                        {[p.planType, p.planCategory].filter(Boolean).join(' · ')}
+                        <span className="ml-1 text-gray-300">· ID {p.planId}</span>
+                      </p>
+                    </div>
+                    {hasSaved && (
+                      <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[10px] font-semibold bg-green-100 text-green-700 shrink-0">
+                        <Tag size={9} />
+                        Special
+                      </span>
+                    )}
+                  </div>
                 </Table.Td>
-                <Table.Td>{p.network}</Table.Td>
-                <Table.Td className="text-gray-500">{naira(p.sellingPrice)}</Table.Td>
+                <Table.Td className="text-gray-500 text-sm">{p.costPrice ? naira(p.costPrice) : <span className="text-gray-300">—</span>}</Table.Td>
+                <Table.Td className="text-gray-600 font-medium">{naira(basePrice)}</Table.Td>
                 <Table.Td>
                   <Input
                     type="number"
                     min="0"
-                    placeholder={String(p.sellingPrice)}
+                    placeholder={String(basePrice)}
                     value={overrides[p.planId] ?? ''}
                     onChange={e => setOverrides(prev => ({ ...prev, [p.planId]: e.target.value }))}
-                    className="w-28"
+                    className={`w-28 ${hasSaved ? 'border-green-400 focus:border-green-500' : ''}`}
                   />
                 </Table.Td>
+                <Table.Td>
+                  {profit === null ? (
+                    <span className="text-gray-300 text-sm">—</span>
+                  ) : (
+                    <span className={`text-sm font-semibold ${profit > 0 ? 'text-green-600' : profit < 0 ? 'text-red-500' : 'text-gray-400'}`}>
+                      {naira(profit)}
+                    </span>
+                  )}
+                </Table.Td>
               </Table.Row>
-            ))}
+              )
+            })}
           </Table.Body>
         </Table>
       </Card>

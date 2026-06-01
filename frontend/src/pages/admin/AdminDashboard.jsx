@@ -10,7 +10,7 @@ import { UserPlus, TrendingUp, Database, Globe } from 'lucide-react'
 const periods = [
   { key: 'today',     label: 'Today'      },
   { key: 'yesterday', label: 'Yesterday'  },
-  { key: 'days30',    label: 'This Month' },
+  { key: 'thisMonth', label: 'This Month' },
 ]
 
 const formatHour = (h) => {

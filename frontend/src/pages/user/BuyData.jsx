@@ -1,7 +1,8 @@
-import { useState } from 'react'
-import { useQuery, useMutation, keepPreviousData } from '@tanstack/react-query'
+import { useState, useRef } from 'react'
+import { useQuery, useMutation, useQueryClient, keepPreviousData } from '@tanstack/react-query'
 import toast from 'react-hot-toast'
 import { purchaseService } from '../../services/purchase.service'
+import { contactService } from '../../services/contact.service'
 import { errMsg, naira } from '../../services/api'
 import { useAuth } from '../../context/AuthContext'
 import { useTheme } from '../../context/ThemeContext'
@@ -10,7 +11,7 @@ import PhoneInput from '../../components/ui/PhoneInput'
 import Button from '../../components/ui/Button'
 import Spinner from '../../components/ui/Spinner'
 import PinModal from '../../components/ui/PinModal'
-import { Flame } from 'lucide-react'
+import { Flame, BookUser, Trash2, Save } from 'lucide-react'
 
 const networks = [
   { name: 'MTN',     bg: '#FFCC00', color: '#1a1a1a', short: 'MTN', logo: '/networks/mtn.png'     },
@@ -23,13 +24,31 @@ const networks = [
 export default function BuyData() {
   const { user } = useAuth()
   const theme = useTheme()
+  const qc = useQueryClient()
   const [network, setNetwork] = useState('MTN')
   const [category, setCategory] = useState('all')
   const [selectedPlan, setSelectedPlan] = useState(null)
   const [phone, setPhone] = useState('')
   const [contactName, setContactName] = useState('')
+  const [saveContact, setSaveContact] = useState(false)
+  const [nickname, setNickname] = useState('')
+  const [contactsOpen, setContactsOpen] = useState(false)
   const [pinOpen, setPinOpen] = useState(false)
   const [pendingPayload, setPendingPayload] = useState(null)
+
+  const { data: contactsData } = useQuery({
+    queryKey: ['contacts'],
+    queryFn: () => contactService.getAll().then(r => r.data),
+  })
+  const contacts = contactsData?.contacts || []
+  const suggestions = phone.length >= 3
+    ? contacts.filter(c => c.phone.includes(phone) || c.name.toLowerCase().includes(phone.toLowerCase()))
+    : []
+
+  const { mutate: deleteContact } = useMutation({
+    mutationFn: (id) => contactService.delete(id),
+    onSuccess: () => qc.invalidateQueries(['contacts']),
+  })
 
   const { data, isLoading, isFetching } = useQuery({
     queryKey: ['plans', network],
@@ -60,9 +79,16 @@ export default function BuyData() {
     mutationFn: purchaseService.buyData,
     onSuccess: ({ data: d }) => {
       toast.success(d.msg || 'Data purchased successfully!')
+      if (saveContact && phone) {
+        contactService.save({ phone, name: nickname || contactName || '' })
+          .then(() => qc.invalidateQueries(['contacts']))
+          .catch(() => {})
+      }
       setSelectedPlan(null)
       setPhone('')
       setContactName('')
+      setSaveContact(false)
+      setNickname('')
     },
     onError: (err) => toast.error(errMsg(err)),
   })
@@ -236,6 +262,7 @@ export default function BuyData() {
         onClose={() => { setSelectedPlan(null); setContactName('') }}
         title="Confirm Purchase"
         size="sm"
+        blurBg
       >
         {selectedPlan && (
           <div className="space-y-4">
@@ -254,19 +281,68 @@ export default function BuyData() {
               </div>
             </div>
 
-            <PhoneInput
-              label="Phone number"
-              type="tel"
-              placeholder="08012345678"
-              value={phone}
-              onChange={e => setPhone(e.target.value)}
-              contactName={contactName}
-              onContactPick={({ number, name }) => {
-                setPhone(number)
-                setContactName(name)
-              }}
-              autoFocus
-            />
+            {/* Phone input */}
+            <div className="relative">
+              <PhoneInput
+                label="Phone number"
+                type="tel"
+                placeholder="08012345678"
+                value={phone}
+                onChange={e => setPhone(e.target.value)}
+                contactName={contactName}
+                onContactPick={({ number, name }) => { setPhone(number); setContactName(name) }}
+                autoFocus
+              />
+
+              {/* Autocomplete suggestions */}
+              {suggestions.length > 0 && (
+                <div className="absolute top-full left-0 right-0 z-10 bg-white border border-gray-200 rounded-xl shadow-lg mt-1 max-h-40 overflow-y-auto">
+                  {suggestions.map(c => (
+                    <button
+                      key={c._id}
+                      type="button"
+                      onClick={() => { setPhone(c.phone); setContactName(c.name) }}
+                      className="w-full text-left px-3 py-2 hover:bg-gray-50 flex items-center justify-between text-sm"
+                    >
+                      <span className="font-medium">{c.name || c.phone}</span>
+                      <span className="text-gray-400 text-xs">{c.name ? c.phone : ''}</span>
+                    </button>
+                  ))}
+                </div>
+              )}
+            </div>
+
+            {/* Saved contacts picker — separate from the input */}
+            <button
+              type="button"
+              onClick={() => setContactsOpen(o => !o)}
+              className="w-full flex items-center justify-center gap-2 py-2 rounded-lg border border-gray-200 hover:bg-gray-50 text-sm text-gray-600 transition-colors"
+            >
+              <BookUser size={16} />
+              Select from saved contacts
+            </button>
+
+            {/* Save contact toggle */}
+            <div className="space-y-2">
+              <label className="flex items-center gap-2 text-sm text-gray-600 cursor-pointer select-none">
+                <input
+                  type="checkbox"
+                  checked={saveContact}
+                  onChange={e => { setSaveContact(e.target.checked); if (!e.target.checked) setNickname('') }}
+                  className="rounded"
+                />
+                Save this number as a contact
+              </label>
+              {saveContact && (
+                <input
+                  type="text"
+                  placeholder="Nickname (optional, e.g. Mum, John)"
+                  value={nickname}
+                  onChange={e => setNickname(e.target.value)}
+                  className="w-full px-3 py-2 text-sm border border-gray-200 rounded-lg outline-none focus:border-indigo-400 focus:ring-2 focus:ring-indigo-100"
+                />
+              )}
+            </div>
 
             <div className="flex gap-2">
               <Button variant="secondary" className="flex-1" onClick={() => setSelectedPlan(null)}>
@@ -276,6 +352,35 @@ export default function BuyData() {
                 Buy Now
               </Button>
             </div>
+          </div>
+        )}
+      </Modal>
+
+      {/* Contacts list modal — rendered after confirmation modal and z-[60] so it always appears on top */}
+      <Modal open={contactsOpen} onClose={() => setContactsOpen(false)} title="Saved Contacts" size="sm" zIndex="z-[60]">
+        {contacts.length === 0 ? (
+          <p className="text-sm text-gray-400 text-center py-4">No saved contacts yet.</p>
+        ) : (
+          <div className="space-y-1 max-h-64 overflow-y-auto">
+            {contacts.map(c => (
+              <div key={c._id} className="flex items-center justify-between p-2.5 rounded-lg hover:bg-gray-50">
+                <button
+                  type="button"
+                  className="flex-1 text-left"
+                  onClick={() => { setPhone(c.phone); setContactName(c.name); setContactsOpen(false) }}
+                >
+                  <p className="text-sm font-medium text-gray-900">{c.name || c.phone}</p>
+                  {c.name && <p className="text-xs text-gray-400">{c.phone}</p>}
+                </button>
+                <button
+                  type="button"
+                  onClick={() => deleteContact(c._id)}
+                  className="p-1.5 rounded-lg hover:bg-red-50 text-gray-400 hover:text-red-500"
+                >
+                  <Trash2 size={14} />
+                </button>
+              </div>
+            ))}
           </div>
         )}
       </Modal>

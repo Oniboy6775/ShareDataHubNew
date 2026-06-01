@@ -32,6 +32,16 @@ const getUsers = async (req, res) => {
   }
 };
 
+const getUserById = async (req, res) => {
+  try {
+    const user = await User.findById(req.params.id).select("-password -apiToken");
+    if (!user) return res.status(404).json({ msg: "User not found" });
+    res.status(200).json({ user });
+  } catch (e) {
+    res.status(500).json({ msg: "Something went wrong" });
+  }
+};
+
 const updateUser = async (req, res) => {
   const { id } = req.params;
   const allowed = ["userType", "isSuspended", "phoneNumber"];
@@ -60,6 +70,27 @@ const creditUser = async (req, res) => {
     ]);
     await notify({ title: "Wallet Funded", body: `₦${amount} manually credited to ${user.userName}`, type: "funding", userId: user._id });
     res.status(200).json({ msg: `₦${amount} credited to ${user.userName}` });
+  } catch (e) {
+    res.status(500).json({ msg: "Something went wrong" });
+  }
+};
+
+const debitUser = async (req, res) => {
+  const { userId, amount, reason } = req.body;
+  if (!userId || !amount) return res.status(400).json({ msg: "userId and amount required" });
+  const parsed = parseFloat(amount);
+  if (parsed <= 0) return res.status(400).json({ msg: "Amount must be greater than 0" });
+  try {
+    const user = await User.findById(userId);
+    if (!user) return res.status(404).json({ msg: "User not found" });
+    if (user.balance < parsed) return res.status(400).json({ msg: `Insufficient user balance. Available: ₦${user.balance?.toLocaleString() || 0}` });
+    await Promise.all([
+      User.updateOne({ _id: userId }, { $inc: { balance: -parsed } }),
+      User.updateOne({ _id: req.user.userId }, { $inc: { balance: parsed } }),
+    ]);
+    const body = reason ? `₦${parsed} debited from ${user.userName}. Reason: ${reason}` : `₦${parsed} debited from ${user.userName}`;
+    await notify({ title: "Wallet Debited", body, type: "debit", userId: user._id });
+    res.status(200).json({ msg: `₦${parsed} debited from ${user.userName}` });
   } catch (e) {
     res.status(500).json({ msg: "Something went wrong" });
   }
@@ -389,6 +420,7 @@ const getProfitAnalytics = async (req, res) => {
 
     const todayStart = startOf(0);
     const yesterdayStart = startOf(1);
+    const thisMonthStart = new Date(now.getFullYear(), now.getMonth(), 1);
 
     // last 30 days broken down per day for the chart
     const dailyBreakdown = await Transaction.aggregate([
@@ -443,16 +475,16 @@ const getProfitAnalytics = async (req, res) => {
       { $sort: { _id: 1 } },
     ]);
 
-    const [today, yesterday, days7, days30, allTime] = await Promise.all([
+    const [today, yesterday, days7, thisMonth, allTime] = await Promise.all([
       profitFor(todayStart),
       profitFor(yesterdayStart, todayStart),
       profitFor(startOf(7)),
-      profitFor(startOf(30)),
+      profitFor(thisMonthStart),
       profitFor(new Date(0)),
     ]);
 
     res.status(200).json({
-      today, yesterday, days7, days30, allTime,
+      today, yesterday, days7, thisMonth, allTime,
       dailyBreakdown, hourlyBreakdown, hourlyBreakdownYesterday, monthlyBreakdown,
     });
   } catch (e) {
@@ -559,7 +591,7 @@ const getMainPlatformBalance = async (req, res) => {
 };
 
 module.exports = {
-  getUsers, updateUser, creditUser, setSpecialPricing,
+  getUsers, getUserById, updateUser, creditUser, debitUser, setSpecialPricing,
   getTransactions, refundTransaction,
   getAdminPlans, updatePlanPrice, syncPlans,
   generateCoupon, listCoupons,

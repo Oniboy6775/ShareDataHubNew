@@ -13,6 +13,7 @@ import Select from '../../components/ui/Select'
 import Modal from '../../components/ui/Modal'
 import Spinner from '../../components/ui/Spinner'
 import TransactionDetailModal from '../../components/ui/TransactionDetailModal'
+import TxDetails from '../../components/ui/TxDetails'
 
 const statusVariant = { success: 'success', failed: 'danger', processing: 'warning', pending: 'warning', refunded: 'info' }
 
@@ -71,7 +72,7 @@ export default function AdminTransactions() {
         </Select>
         <Select value={filters.type} onChange={setFilter('type')} className="w-40">
           <option value="">All types</option>
-          {['data','airtime','electricity','cable'].map(t => <option key={t}>{t}</option>)}
+          {['data','airtime','electricity','cable','wallet'].map(t => <option key={t}>{t}</option>)}
         </Select>
       </div>
 
@@ -112,15 +113,10 @@ export default function AdminTransactions() {
                         {tx.trans_Status}
                       </Badge>
                     </Table.Td>
-                    <Table.Td className="text-xs text-gray-500">
-                      {tx.trans_plan
-                        ? <span>{tx.trans_plan}</span>
-                        : <>{tx.trans_Network && <span className="mr-1">{tx.trans_Network}</span>}{tx.phone_number}</>
-                      }
-                    </Table.Td>
+                    <Table.Td><TxDetails tx={tx} /></Table.Td>
                     <Table.Td className="font-medium">{naira(tx.trans_amount)}</Table.Td>
                     <Table.Td className={tx.trans_profit > 0 ? 'text-green-600 font-medium text-sm' : 'text-gray-400 text-sm'}>
-                      {tx.trans_profit > 0 ? `+${naira(tx.trans_profit)}` : tx.trans_Status === 'success' ? naira(0) : '—'}
+                      {tx.trans_profit > 0 ? naira(tx.trans_profit) : tx.trans_Status === 'success' ? naira(0) : '—'}
                     </Table.Td>
                     <Table.Td className="text-xs text-gray-500 whitespace-nowrap">
                       {tx.trans_Date || new Date(tx.createdAt).toLocaleString()}

@@ -14,7 +14,7 @@ import Select from '../../components/ui/Select'
 import Modal from '../../components/ui/Modal'
 import Spinner from '../../components/ui/Spinner'
 
-function ActionMenu({ user, onCredit, onToggleSuspend, onReset, onRemoveSpecial, onChangeType }) {
+function ActionMenu({ user, onCredit, onDebit, onToggleSuspend, onReset, onRemoveSpecial, onChangeType }) {
   const [open, setOpen] = useState(false)
   const close = () => setOpen(false)
   return (
@@ -31,6 +31,10 @@ function ActionMenu({ user, onCredit, onToggleSuspend, onReset, onRemoveSpecial,
             <button onClick={() => { close(); onCredit(user) }}
               className="w-full text-left px-4 py-2.5 text-sm hover:bg-gray-50 font-medium text-gray-700 transition-colors">
               Credit Wallet
+            </button>
+            <button onClick={() => { close(); onDebit(user) }}
+              className="w-full text-left px-4 py-2.5 text-sm hover:bg-gray-50 font-medium text-red-600 transition-colors">
+              Debit Wallet
             </button>
             <Link to={`/admin/users/${user._id}/pricing`} onClick={close}
               className="block px-4 py-2.5 text-sm hover:bg-gray-50 font-medium text-gray-700 transition-colors">
@@ -70,6 +74,9 @@ export default function AdminUsers() {
   const [page, setPage] = useState(1)
   const [creditModal, setCreditModal] = useState(null)
   const [creditAmount, setCreditAmount] = useState('')
+  const [debitModal, setDebitModal] = useState(null)
+  const [debitAmount, setDebitAmount] = useState('')
+  const [debitReason, setDebitReason] = useState('')
   const [resetModal, setResetModal] = useState(null)
   const [newPassword, setNewPassword] = useState('')
   const [typeModal, setTypeModal] = useState(null)
@@ -93,6 +100,18 @@ export default function AdminUsers() {
       toast.success(d.msg || 'Credited!')
       setCreditModal(null)
       setCreditAmount('')
+      qc.invalidateQueries(['admin-users'])
+    },
+    onError: (err) => toast.error(errMsg(err)),
+  })
+
+  const { mutate: debit, isPending: debiting } = useMutation({
+    mutationFn: adminService.debitUser,
+    onSuccess: ({ data: d }) => {
+      toast.success(d.msg || 'Debited!')
+      setDebitModal(null)
+      setDebitAmount('')
+      setDebitReason('')
       qc.invalidateQueries(['admin-users'])
     },
     onError: (err) => toast.error(errMsg(err)),
@@ -224,6 +243,7 @@ export default function AdminUsers() {
                       <ActionMenu
                         user={u}
                         onCredit={setCreditModal}
+                        onDebit={setDebitModal}
                         onToggleSuspend={(u) => toggleSuspend({ id: u._id, isSuspended: !u.isSuspended })}
                         onReset={setResetModal}
                         onRemoveSpecial={(u) => removeSpecial(u._id)}
@@ -271,6 +291,36 @@ export default function AdminUsers() {
               disabled={!creditAmount || Number(creditAmount) <= 0}
               onClick={() => credit({ userId: creditModal._id, amount: Number(creditAmount) })}>
               Credit
+            </Button>
+          </div>
+        </div>
+      </Modal>
+
+      {/* Debit modal */}
+      <Modal open={!!debitModal} onClose={() => { setDebitModal(null); setDebitAmount(''); setDebitReason('') }} title={`Debit Wallet — ${debitModal?.userName}`}>
+        <div className="space-y-4">
+          <Input
+            label="Amount (₦)"
+            type="number"
+            min="1"
+            placeholder="1000"
+            value={debitAmount}
+            onChange={e => setDebitAmount(e.target.value)}
+          />
+          <Input
+            label="Reason (optional)"
+            placeholder="e.g. reversal, correction…"
+            value={debitReason}
+            onChange={e => setDebitReason(e.target.value)}
+          />
+          <div className="flex gap-2 justify-end">
+            <Button variant="secondary" onClick={() => { setDebitModal(null); setDebitAmount(''); setDebitReason('') }}>Cancel</Button>
+            <Button
+              variant="danger"
+              loading={debiting}
+              disabled={!debitAmount || Number(debitAmount) <= 0}
+              onClick={() => debit({ userId: debitModal._id, amount: Number(debitAmount), reason: debitReason })}>
+              Debit
             </Button>
           </div>
         </div>

@@ -2,8 +2,10 @@ import api from "./api";
 export const adminService = {
   getDashboard: () => api.get("/admin/dashboard"),
   getUsers: (p) => api.get("/admin/users", { params: p }),
+  getUserById: (id) => api.get(`/admin/users/${id}`),
   updateUser: (id, d) => api.patch(`/admin/users/${id}`, d),
   creditUser: (d) => api.post("/admin/users/credit", d),
+  debitUser: (d) => api.post("/admin/users/debit", d),
   setSpecialPricing: (id, d) => api.patch(`/admin/users/${id}/special-pricing`, d),
   getTransactions: (p) => api.get("/admin/transactions", { params: p }),
   refundTransaction: (d) => api.post("/admin/transactions/refund", d),

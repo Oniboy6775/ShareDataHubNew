@@ -3,7 +3,7 @@ const router = express.Router();
 const auth = require("../Middleware/auth");
 const isAdmin = require("../Middleware/isAdmin");
 const {
-  getUsers, updateUser, creditUser, setSpecialPricing,
+  getUsers, getUserById, updateUser, creditUser, debitUser, setSpecialPricing,
   getTransactions, refundTransaction,
   getAdminPlans, updatePlanPrice, syncPlans,
   generateCoupon, listCoupons,
@@ -22,8 +22,10 @@ router.get("/platform-balance", getMainPlatformBalance);
 router.get("/analytics/profit", getProfitAnalytics);
 
 router.get("/users", getUsers);
+router.get("/users/:id", getUserById);
 router.patch("/users/:id", updateUser);
 router.post("/users/credit", creditUser);
+router.post("/users/debit", debitUser);
 router.patch("/users/:id/special-pricing", setSpecialPricing);
 router.post("/users/:id/reset-pin", resetUserPin);
 router.post("/users/:id/reset-password", resetUserPassword);

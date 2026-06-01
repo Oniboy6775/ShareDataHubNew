@@ -150,12 +150,9 @@ export default function AdminPlans() {
           <Table>
             <Table.Head>
               <Table.Row>
-                <Table.Th>ID</Table.Th>
-                <Table.Th>Network</Table.Th>
-                <Table.Th>Plan Name</Table.Th>
-                <Table.Th>Type</Table.Th>
-                <Table.Th>Cost Price</Table.Th>
-                <Table.Th>Selling Price</Table.Th>
+                <Table.Th>Plan</Table.Th>
+                <Table.Th>Cost</Table.Th>
+                <Table.Th>Selling</Table.Th>
                 <Table.Th>Profit</Table.Th>
                 <Table.Th>Status</Table.Th>
                 <Table.Th>Hot</Table.Th>
@@ -167,14 +164,22 @@ export default function AdminPlans() {
                 const profit = (p.sellingPrice || 0) - (p.costPrice || 0)
                 return (
                   <Table.Row key={p._id}>
-                    <Table.Td className="text-gray-500 text-xs">{p.planId}</Table.Td>
-                    <Table.Td className="font-medium">{p.network}</Table.Td>
-                    <Table.Td>{p.planName}</Table.Td>
-                    <Table.Td className="text-gray-500 text-xs">{p.planType}</Table.Td>
+                    <Table.Td>
+                      <div className="flex items-start gap-2">
+                        <span className="mt-0.5 text-[10px] font-bold px-1.5 py-0.5 rounded bg-gray-100 text-gray-600 shrink-0">{p.network}</span>
+                        <div>
+                          <p className="font-medium text-sm leading-tight">{p.planName}</p>
+                          <p className="text-xs text-gray-400 mt-0.5">
+                            {[p.planType, p.planCategory].filter(Boolean).join(' · ')}
+                            <span className="ml-1 text-gray-300">· ID {p.planId}</span>
+                          </p>
+                        </div>
+                      </div>
+                    </Table.Td>
                     <Table.Td className="text-gray-500">{naira(p.costPrice ?? 0)}</Table.Td>
                     <Table.Td className="font-medium">{naira(p.sellingPrice)}</Table.Td>
                     <Table.Td className={profit > 0 ? 'text-green-600 font-medium' : profit < 0 ? 'text-red-500 font-medium' : 'text-gray-400'}>
-                      {profit > 0 ? '+' : ''}{naira(profit)}
+                      {naira(profit)}
                     </Table.Td>
                     <Table.Td>
                       <button

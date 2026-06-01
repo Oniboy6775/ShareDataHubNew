@@ -16,6 +16,7 @@ app.use("/api/v1/buy", require("./Routes/purchaseRoutes"));
 app.use("/api/v1/webhook", require("./Routes/walletRoutes"));
 app.use("/api/v1/fundwallet", require("./Routes/walletRoutes"));
 app.use("/api/v1/admin", require("./Routes/adminRoutes"));
+app.use("/api/v1/contacts", require("./Routes/contactRoutes"));
 
 // Public — active broadcasts shown to all logged-in users as banners
 const { getActiveBroadcasts } = require("./Routes/adminRoutes");
