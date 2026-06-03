@@ -47,7 +47,7 @@ export default function Transactions() {
         </Select>
         <Select value={filters.type} onChange={setFilter('type')} className="w-40">
           <option value="">All types</option>
-          {['data', 'airtime', 'electricity', 'cable'].map(t => <option key={t}>{t}</option>)}
+          {['data', 'airtime', 'electricity', 'cable', 'wallet'].map(t => <option key={t}>{t}</option>)}
         </Select>
       </div>
 

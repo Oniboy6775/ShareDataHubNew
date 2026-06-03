@@ -8,7 +8,7 @@ import { naira } from '../../services/api'
 import Card from '../../components/ui/Card'
 import Badge from '../../components/ui/Badge'
 import Spinner from '../../components/ui/Spinner'
-import { Wifi, Phone, Zap, Tv, CreditCard, List, Copy, Building2 } from 'lucide-react'
+import { Wifi, Phone, Zap, Tv, CreditCard, List, Copy, Building2, Database } from 'lucide-react'
 import toast from 'react-hot-toast'
 
 const statusVariant = { success: 'success', failed: 'danger', processing: 'warning', pending: 'warning', refunded: 'info' }
@@ -158,6 +158,12 @@ export default function Dashboard() {
     onSuccess: (d) => setUser(d.user),
   })
 
+  const { data: statsData } = useQuery({
+    queryKey: ['user-stats'],
+    queryFn: () => authService.getStats().then(r => r.data),
+    refetchInterval: 60_000,
+  })
+
   const referralLink = `${window.location.origin}/register?ref=${user?.userName}`
 
   return (
@@ -166,13 +172,35 @@ export default function Dashboard() {
         <h1 className="text-2xl font-bold text-gray-900">Welcome back, {user?.userName} 👋</h1>
         <p className="text-sm text-gray-500 mt-0.5">Here's what's happening with your account today.</p>
       </div>
-      <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
         <Card className="p-5">
           <p className="text-sm text-gray-500 mb-1">Wallet Balance</p>
           <p className="text-3xl font-bold text-gray-900">{naira(user?.balance ?? 0)}</p>
           <Link to="/fund-wallet" className="mt-3 inline-block text-xs text-primary font-medium hover:underline">
             + Add funds
           </Link>
+        </Card>
+        <Card className="p-5">
+          <div className="flex items-center justify-between">
+            <div>
+              <p className="text-sm text-gray-500 mb-1">GB Sold Today</p>
+              <p className="text-2xl font-bold text-gray-900">{((statsData?.gbSoldToday ?? 0)).toFixed(2)} GB</p>
+            </div>
+            <div className="h-11 w-11 rounded-xl flex items-center justify-center bg-purple-50 text-purple-600">
+              <Database size={20} />
+            </div>
+          </div>
+        </Card>
+        <Card className="p-5">
+          <div className="flex items-center justify-between">
+            <div>
+              <p className="text-sm text-gray-500 mb-1">GB Sold This Month</p>
+              <p className="text-2xl font-bold text-gray-900">{((statsData?.gbSoldThisMonth ?? 0)).toFixed(2)} GB</p>
+            </div>
+            <div className="h-11 w-11 rounded-xl flex items-center justify-center bg-emerald-50 text-emerald-600">
+              <Database size={20} />
+            </div>
+          </div>
         </Card>
       </div>
 

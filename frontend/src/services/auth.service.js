@@ -15,4 +15,5 @@ export const authService = {
   createBillStackAccount: (d) => api.post("/fundwallet/billstack-account", d),
   setPin: (d) => api.post("/auth/set-pin", d),
   removePin: () => api.post("/auth/remove-pin"),
+  getStats: () => api.get("/auth/stats"),
 };

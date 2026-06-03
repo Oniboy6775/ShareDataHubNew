@@ -1,4 +1,5 @@
 import { useState, useRef } from 'react'
+import { useNavigate } from 'react-router-dom'
 import { useQuery, useMutation, useQueryClient, keepPreviousData } from '@tanstack/react-query'
 import toast from 'react-hot-toast'
 import { purchaseService } from '../../services/purchase.service'
@@ -11,7 +12,7 @@ import PhoneInput from '../../components/ui/PhoneInput'
 import Button from '../../components/ui/Button'
 import Spinner from '../../components/ui/Spinner'
 import PinModal from '../../components/ui/PinModal'
-import { Flame, BookUser, Trash2, Save } from 'lucide-react'
+import { Flame, BookUser, Trash2, CheckCircle } from 'lucide-react'
 
 const networks = [
   { name: 'MTN',     bg: '#FFCC00', color: '#1a1a1a', short: 'MTN', logo: '/networks/mtn.png'     },
@@ -25,6 +26,7 @@ export default function BuyData() {
   const { user } = useAuth()
   const theme = useTheme()
   const qc = useQueryClient()
+  const navigate = useNavigate()
   const [network, setNetwork] = useState('MTN')
   const [category, setCategory] = useState('all')
   const [selectedPlan, setSelectedPlan] = useState(null)
@@ -35,6 +37,7 @@ export default function BuyData() {
   const [contactsOpen, setContactsOpen] = useState(false)
   const [pinOpen, setPinOpen] = useState(false)
   const [pendingPayload, setPendingPayload] = useState(null)
+  const [successInfo, setSuccessInfo] = useState(null)
 
   const { data: contactsData } = useQuery({
     queryKey: ['contacts'],
@@ -42,7 +45,7 @@ export default function BuyData() {
   })
   const contacts = contactsData?.contacts || []
   const suggestions = phone.length >= 3
-    ? contacts.filter(c => c.phone.includes(phone) || c.name.toLowerCase().includes(phone.toLowerCase()))
+    ? contacts.filter(c => (c.phone || '').includes(phone) || (c.name || '').toLowerCase().includes(phone.toLowerCase()))
     : []
 
   const { mutate: deleteContact } = useMutation({
@@ -78,12 +81,12 @@ export default function BuyData() {
   const { mutate, isPending } = useMutation({
     mutationFn: purchaseService.buyData,
     onSuccess: ({ data: d }) => {
-      toast.success(d.msg || 'Data purchased successfully!')
       if (saveContact && phone) {
         contactService.save({ phone, name: nickname || contactName || '' })
           .then(() => qc.invalidateQueries(['contacts']))
           .catch(() => {})
       }
+      setSuccessInfo({ plan: selectedPlan, phone, msg: d.msg || 'Data purchased successfully!' })
       setSelectedPlan(null)
       setPhone('')
       setContactName('')
@@ -259,13 +262,19 @@ export default function BuyData() {
       {/* Confirmation modal */}
       <Modal
         open={!!selectedPlan}
-        onClose={() => { setSelectedPlan(null); setContactName('') }}
+        onClose={() => { if (!isPending) { setSelectedPlan(null); setContactName('') } }}
         title="Confirm Purchase"
         size="sm"
         blurBg
       >
         {selectedPlan && (
           <div className="space-y-4">
+            {isPending && (
+              <div className="absolute inset-0 bg-white/80 backdrop-blur-sm rounded-xl flex flex-col items-center justify-center z-10 gap-3">
+                <Spinner size="lg" />
+                <p className="text-sm font-medium text-gray-600">Processing your purchase…</p>
+              </div>
+            )}
             <div className="bg-gray-50 rounded-lg p-4 space-y-2 text-sm">
               <div className="flex justify-between">
                 <span className="text-gray-500">Network</span>
@@ -352,6 +361,38 @@ export default function BuyData() {
                 Buy Now
               </Button>
             </div>
+          </div>
+        )}
+      </Modal>
+
+      {/* Success modal */}
+      <Modal open={!!successInfo} onClose={() => {}} title="" size="sm" blurBg>
+        {successInfo && (
+          <div className="flex flex-col items-center gap-4 py-2 text-center">
+            <div className="h-16 w-16 rounded-full bg-green-100 flex items-center justify-center">
+              <CheckCircle size={36} className="text-green-500" />
+            </div>
+            <div>
+              <p className="text-lg font-bold text-gray-900">Purchase Successful!</p>
+              <p className="text-sm text-gray-500 mt-1">{successInfo.msg}</p>
+            </div>
+            <div className="bg-gray-50 rounded-xl p-4 w-full text-left space-y-1.5 text-sm">
+              <div className="flex justify-between">
+                <span className="text-gray-500">Network</span>
+                <span className="font-semibold">{network}</span>
+              </div>
+              <div className="flex justify-between">
+                <span className="text-gray-500">Plan</span>
+                <span className="font-semibold text-right max-w-[55%]">{successInfo.plan?.planName}</span>
+              </div>
+              <div className="flex justify-between">
+                <span className="text-gray-500">Phone</span>
+                <span className="font-mono font-semibold">{successInfo.phone}</span>
+              </div>
+            </div>
+            <Button className="w-full" onClick={() => { setSuccessInfo(null); navigate('/') }}>
+              OK — Go to Dashboard
+            </Button>
           </div>
         )}
       </Modal>
