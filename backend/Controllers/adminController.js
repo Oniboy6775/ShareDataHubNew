@@ -68,6 +68,20 @@ const creditUser = async (req, res) => {
       User.updateOne({ _id: userId }, { $inc: { balance: parsed } }),
       User.updateOne({ _id: req.user.userId }, { $inc: { balance: -parsed } }),
     ]);
+    await Transaction.create({
+      trans_Id: uuid(),
+      trans_By: user._id,
+      trans_UserName: user.userName,
+      trans_Type: "wallet",
+      trans_Network: "Admin Credit",
+      phone_number: "",
+      trans_amount: parsed,
+      balance_Before: user.balance,
+      balance_After: user.balance + parsed,
+      trans_Status: "success",
+      trans_profit: 0,
+      trans_Date: new Date(Date.now() + 60 * 60 * 1000).toLocaleString("en-NG", { timeZone: "Africa/Lagos" }),
+    });
     await notify({ title: "Wallet Funded", body: `₦${amount} manually credited to ${user.userName}`, type: "funding", userId: user._id });
     res.status(200).json({ msg: `₦${amount} credited to ${user.userName}` });
   } catch (e) {
@@ -88,6 +102,20 @@ const debitUser = async (req, res) => {
       User.updateOne({ _id: userId }, { $inc: { balance: -parsed } }),
       User.updateOne({ _id: req.user.userId }, { $inc: { balance: parsed } }),
     ]);
+    await Transaction.create({
+      trans_Id: uuid(),
+      trans_By: user._id,
+      trans_UserName: user.userName,
+      trans_Type: "wallet",
+      trans_Network: reason ? `Admin Debit: ${reason}` : "Admin Debit",
+      phone_number: "",
+      trans_amount: parsed,
+      balance_Before: user.balance,
+      balance_After: user.balance - parsed,
+      trans_Status: "success",
+      trans_profit: 0,
+      trans_Date: new Date(Date.now() + 60 * 60 * 1000).toLocaleString("en-NG", { timeZone: "Africa/Lagos" }),
+    });
     const body = reason ? `₦${parsed} debited from ${user.userName}. Reason: ${reason}` : `₦${parsed} debited from ${user.userName}`;
     await notify({ title: "Wallet Debited", body, type: "debit", userId: user._id });
     res.status(200).json({ msg: `₦${parsed} debited from ${user.userName}` });

@@ -3,7 +3,7 @@ const router = express.Router();
 const auth = require("../Middleware/auth");
 const {
   register, login, getProfile, changePassword,
-  generateApiKey, updateProfile, redeemCoupon, getTransactions,
+  generateApiKey, updateProfile, redeemCoupon, getTransactions, getUserStats,
   forgotPassword, resetPassword, setPin, removePin,
 } = require("../Controllers/authController");
 
@@ -19,5 +19,6 @@ router.post("/change-password", auth, changePassword);
 router.post("/generate-api-key", auth, generateApiKey);
 router.post("/redeem-coupon", auth, redeemCoupon);
 router.get("/transactions", auth, getTransactions);
+router.get("/stats", auth, getUserStats);
 
 module.exports = router;

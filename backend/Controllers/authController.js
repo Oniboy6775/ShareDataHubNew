@@ -151,6 +151,24 @@ const redeemCoupon = async (req, res) => {
   }
 };
 
+const getUserStats = async (req, res) => {
+  const Transaction = require("../Models/transactionModel");
+  try {
+    const now = new Date();
+    const startOfToday = new Date(now); startOfToday.setHours(0, 0, 0, 0);
+    const startOfMonth = new Date(now.getFullYear(), now.getMonth(), 1);
+    const userId = req.user.userId;
+    const gbAgg = (from) => Transaction.aggregate([
+      { $match: { trans_By: new (require("mongoose").Types.ObjectId)(userId), trans_Type: "data", trans_Status: "success", createdAt: { $gte: from } } },
+      { $group: { _id: null, gb: { $sum: "$trans_volume_ratio" } } },
+    ]);
+    const [gbToday, gbMonth] = await Promise.all([gbAgg(startOfToday), gbAgg(startOfMonth)]);
+    res.status(200).json({ gbSoldToday: gbToday[0]?.gb || 0, gbSoldThisMonth: gbMonth[0]?.gb || 0 });
+  } catch (e) {
+    res.status(500).json({ msg: "Something went wrong" });
+  }
+};
+
 const getTransactions = async (req, res) => {
   const Transaction = require("../Models/transactionModel");
   const { page = 1, limit = 20, status, type, search } = req.query;
@@ -262,4 +280,4 @@ const resetPassword = async (req, res) => {
   }
 };
 
-module.exports = { register, login, getProfile, changePassword, generateApiKey, updateProfile, redeemCoupon, getTransactions, forgotPassword, resetPassword, setPin, removePin };
+module.exports = { register, login, getProfile, changePassword, generateApiKey, updateProfile, redeemCoupon, getTransactions, getUserStats, forgotPassword, resetPassword, setPin, removePin };
