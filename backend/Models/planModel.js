@@ -13,6 +13,9 @@ const planSchema = new mongoose.Schema({
   isAvailable: { type: Boolean, default: true },
   isHot: { type: Boolean, default: false },
   botEnabled: { type: Boolean, default: false },
+  // Optional override charged when this plan is bought via the WhatsApp bot.
+  // 0/unset means "use normal pricing" (resolvePrice for registered users, sellingPrice for guests).
+  botPrice: { type: Number, default: 0 },
 });
 
 module.exports = mongoose.model("Plan", planSchema);

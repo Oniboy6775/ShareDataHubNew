@@ -7,7 +7,11 @@ const { initiateGuestMonnifyPayment } = require("../Utils/monnifyPayment");
 const { sendWhatsAppMessage, apiCall } = require("../Utils/whatsappHelper");
 const { getBotNotification } = require("../Utils/botNotifications");
 
-const ENDPOINT_BY_TYPE = { data: "/buy/data", airtime: "/buy/airtime", electricity: "/buy/electricity" };
+const ENDPOINT_BY_TYPE = {
+  data: "/buy/data",
+  airtime: "/buy/airtime",
+  electricity: "/buy/electricity",
+};
 
 const getBotWallet = async () => {
   const cfg = await Settings.getSingleton();
@@ -18,17 +22,31 @@ const getBotWallet = async () => {
 const getBotToken = async () => {
   const bot = await getBotWallet();
   if (!bot) throw new Error("Bot wallet is not configured. Contact admin.");
-  return jwt.sign({ userId: bot._id, userType: bot.userType }, process.env.JWT_SECRET, { expiresIn: "15m" });
+  return jwt.sign(
+    { userId: bot._id, userType: bot.userType },
+    process.env.JWT_SECRET,
+    { expiresIn: "15m" },
+  );
 };
 
 // initiateGuestPayment NEVER moves money — it only creates the pending order
 // and asks the guest to pay/confirm. All balance movement happens in
 // fulfillGuestOrder, so there is exactly one place money can move.
-const initiateGuestPayment = async (to, session, guest, serviceType, payload, totalAmount) => {
+const initiateGuestPayment = async (
+  to,
+  session,
+  guest,
+  serviceType,
+  payload,
+  totalAmount,
+) => {
   const guestBalanceUsed = Math.min(guest.balance, totalAmount);
   const monnifyAmount = totalAmount - guestBalanceUsed;
 
   if (monnifyAmount === 0) {
+    // Guest already confirmed by tapping "Confirm Purchase" one step earlier —
+    // asking them to reply CONFIRM again here was a redundant second prompt,
+    // so process immediately instead of parking in AWAITING_PAYMENT.
     const order = await GuestPendingOrder.create({
       phoneNumber: to,
       serviceType,
@@ -39,20 +57,37 @@ const initiateGuestPayment = async (to, session, guest, serviceType, payload, to
       status: "pending",
       expiresAt: new Date(Date.now() + 60 * 60 * 1000),
     });
-    session.state = "AWAITING_PAYMENT";
-    session.context.orderId = order._id.toString();
-    session.markModified("context");
+    session.state = "IDLE";
+    session.context = {};
     await session.save();
-    await sendWhatsAppMessage(to, "✅ Your wallet balance covers this purchase.\n\nReply *CONFIRM* to proceed or *CANCEL* to abort.");
+    await sendWhatsAppMessage(
+      to,
+      "⏳ Your wallet balance covers this purchase — processing now...",
+    );
+    await fulfillGuestOrder(order, 0);
     return;
   }
 
-  const guestEmail = `${to}@bot.guest`;
-  const { paymentReference, accountNumber, bankName } = await initiateGuestMonnifyPayment(
-    monnifyAmount,
-    guestEmail,
-    guest.profileName || to,
-  );
+  const guestEmail = `${to}@gmail.com`;
+  let paymentReference, accountNumber, bankName;
+  try {
+    ({ paymentReference, accountNumber, bankName } =
+      await initiateGuestMonnifyPayment(
+        monnifyAmount,
+        guestEmail,
+        guest.profileName || to,
+      ));
+  } catch (e) {
+    console.error(
+      `[initiateGuestPayment] Monnify init failed at step [${e.monnifyStep || "unknown"}]:`,
+      e?.response?.data || e.message,
+    );
+    await sendWhatsAppMessage(
+      to,
+      "❌ Unable to generate a payment account right now. Please try again in a moment, or type *MENU* to start over.",
+    );
+    return;
+  }
 
   const order = await GuestPendingOrder.create({
     phoneNumber: to,
@@ -73,7 +108,8 @@ const initiateGuestPayment = async (to, session, guest, serviceType, payload, to
   await session.save();
 
   let msg = "💳 *Complete Your Payment*\n\n";
-  if (guestBalanceUsed > 0) msg += `Wallet balance used: ₦${guestBalanceUsed.toLocaleString()}\n`;
+  if (guestBalanceUsed > 0)
+    msg += `Wallet balance used: ₦${guestBalanceUsed.toLocaleString()}\n`;
   msg += `Amount to pay: ₦${monnifyAmount.toLocaleString()}\nBank: ${bankName}\nAccount Number: ${accountNumber}\n\nReply *PAID* once payment is confirmed or *CANCEL* to abort.`;
   await sendWhatsAppMessage(to, msg);
 };
@@ -81,12 +117,21 @@ const initiateGuestPayment = async (to, session, guest, serviceType, payload, to
 const _failOrder = async (order, guest, linkedUser, botUser, reason) => {
   try {
     if (order.guestBalanceUsed > 0 && botUser) {
-      await User.updateOne({ _id: botUser._id }, { $inc: { balance: -order.guestBalanceUsed } });
+      await User.updateOne(
+        { _id: botUser._id },
+        { $inc: { balance: -order.guestBalanceUsed } },
+      );
     }
     if (guest) {
-      await GuestUser.updateOne({ _id: guest._id }, { $inc: { balance: order.totalAmount } });
+      await GuestUser.updateOne(
+        { _id: guest._id },
+        { $inc: { balance: order.totalAmount } },
+      );
     } else if (linkedUser) {
-      await User.updateOne({ _id: linkedUser._id }, { $inc: { balance: order.totalAmount } });
+      await User.updateOne(
+        { _id: linkedUser._id },
+        { $inc: { balance: order.totalAmount } },
+      );
     }
     order.status = "failed";
     order.processedAt = new Date();
@@ -104,7 +149,9 @@ const fulfillGuestOrder = async (order, settlementAmount) => {
   if (order.status !== "pending") return;
 
   const guest = await GuestUser.findOne({ phoneNumber: order.phoneNumber });
-  const linkedUser = !guest ? await User.findOne({ whatsappNumber: order.phoneNumber }) : null;
+  const linkedUser = !guest
+    ? await User.findOne({ whatsappNumber: order.phoneNumber })
+    : null;
   const botUser = await getBotWallet();
 
   if (!botUser) {
@@ -115,33 +162,63 @@ const fulfillGuestOrder = async (order, settlementAmount) => {
   try {
     if (order.guestBalanceUsed > 0) {
       if (guest) {
-        await GuestUser.updateOne({ _id: guest._id }, { $inc: { balance: -order.guestBalanceUsed } });
+        await GuestUser.updateOne(
+          { _id: guest._id },
+          { $inc: { balance: -order.guestBalanceUsed } },
+        );
       } else if (linkedUser) {
-        await User.updateOne({ _id: linkedUser._id }, { $inc: { balance: -order.guestBalanceUsed } });
+        await User.updateOne(
+          { _id: linkedUser._id },
+          { $inc: { balance: -order.guestBalanceUsed } },
+        );
       }
-      await User.updateOne({ _id: botUser._id }, { $inc: { balance: order.guestBalanceUsed } });
+      await User.updateOne(
+        { _id: botUser._id },
+        { $inc: { balance: order.guestBalanceUsed } },
+      );
     }
 
     const token = await getBotToken();
-    const result = await apiCall("POST", ENDPOINT_BY_TYPE[order.serviceType], order.servicePayload, token);
+    const result = await apiCall(
+      "POST",
+      ENDPOINT_BY_TYPE[order.serviceType],
+      order.servicePayload,
+      token,
+    );
 
     order.status = "completed";
     order.processedAt = new Date();
     await order.save();
 
     let freshBalance = 0;
-    if (guest) freshBalance = (await GuestUser.findById(guest._id))?.balance ?? 0;
-    else if (linkedUser) freshBalance = (await User.findById(linkedUser._id))?.balance ?? 0;
+    if (guest)
+      freshBalance = (await GuestUser.findById(guest._id))?.balance ?? 0;
+    else if (linkedUser)
+      freshBalance = (await User.findById(linkedUser._id))?.balance ?? 0;
 
-    const suffix = await getBotNotification(guest ? "guestPurchaseSuccess" : "registeredPurchaseSuccess");
+    const suffix = await getBotNotification(
+      guest ? "guestPurchaseSuccess" : "registeredPurchaseSuccess",
+    );
     await sendWhatsAppMessage(
       order.phoneNumber,
       `✅ ${result?.msg || "Purchase successful!"}\n\nBalance: ₦${freshBalance.toLocaleString()}${suffix}`,
     );
   } catch (err) {
     console.error("[fulfillGuestOrder]", err?.response?.data || err.message);
-    await _failOrder(order, guest, linkedUser, botUser, err?.response?.data?.msg || err.message);
+    await _failOrder(
+      order,
+      guest,
+      linkedUser,
+      botUser,
+      err?.response?.data?.msg || err.message,
+    );
   }
 };
 
-module.exports = { getBotWallet, getBotToken, initiateGuestPayment, fulfillGuestOrder, _failOrder };
+module.exports = {
+  getBotWallet,
+  getBotToken,
+  initiateGuestPayment,
+  fulfillGuestOrder,
+  _failOrder,
+};

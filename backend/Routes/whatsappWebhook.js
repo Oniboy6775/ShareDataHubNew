@@ -11,7 +11,7 @@ const {
 const { handleMessage } = require("../Controllers/whatsappBotController");
 
 // Meta verification handshake
-router.get("/webhookss", async (req, res) => {
+router.get("/webhook", async (req, res) => {
   const mode = req.query["hub.mode"];
   const verifyToken = req.query["hub.verify_token"];
   const challenge = req.query["hub.challenge"];
@@ -27,7 +27,7 @@ router.get("/webhookss", async (req, res) => {
 });
 
 // Incoming WhatsApp messages
-router.post("/webhookss", (req, res) => {
+router.post("/webhook", (req, res) => {
   res.sendStatus(200); // Meta requires a 200 within 5 seconds
   try {
     const value = req.body?.entry?.[0]?.changes?.[0]?.value;

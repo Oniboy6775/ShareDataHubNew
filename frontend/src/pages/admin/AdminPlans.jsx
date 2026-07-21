@@ -84,6 +84,7 @@ export default function AdminPlans() {
       sellingPrice: plan.sellingPrice,
       resellerPrice: plan.resellerPrice ?? '',
       apiPrice: plan.apiPrice ?? '',
+      botPrice: plan.botPrice || '',
       isHot: !!plan.isHot,
       isAvailable: plan.isAvailable !== false,
     })
@@ -256,6 +257,16 @@ export default function AdminPlans() {
             value={prices.apiPrice}
             onChange={e => setPrices(p => ({ ...p, apiPrice: e.target.value }))}
           />
+          <div>
+            <Input
+              label="Bot price (₦) — optional"
+              type="number"
+              placeholder="Leave blank to use normal pricing"
+              value={prices.botPrice}
+              onChange={e => setPrices(p => ({ ...p, botPrice: e.target.value }))}
+            />
+            <p className="text-xs text-gray-400 mt-1">Overrides the price charged when this plan is bought via the WhatsApp bot (guests and registered users). Leave blank/0 to use normal pricing.</p>
+          </div>
           {/* Available toggle inside modal */}
           <div className="flex items-center justify-between rounded-xl border border-gray-200 px-4 py-3">
             <div className="flex items-center gap-2">
@@ -301,6 +312,7 @@ export default function AdminPlans() {
                   sellingPrice: Number(prices.sellingPrice),
                   resellerPrice: Number(prices.resellerPrice),
                   apiPrice: Number(prices.apiPrice),
+                  botPrice: Number(prices.botPrice) || 0,
                   isHot: prices.isHot,
                   isAvailable: prices.isAvailable,
                 },

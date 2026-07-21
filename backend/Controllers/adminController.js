@@ -183,7 +183,7 @@ const getAdminPlans = async (req, res) => {
 
 const updatePlanPrice = async (req, res) => {
   const { id } = req.params;
-  const { sellingPrice, resellerPrice, apiPrice, isAvailable, isHot, botEnabled } = req.body;
+  const { sellingPrice, resellerPrice, apiPrice, isAvailable, isHot, botEnabled, botPrice } = req.body;
   try {
     const updates = {};
     if (sellingPrice !== undefined) updates.sellingPrice = sellingPrice;
@@ -191,6 +191,7 @@ const updatePlanPrice = async (req, res) => {
     if (apiPrice !== undefined) updates.apiPrice = apiPrice;
     if (isAvailable !== undefined) updates.isAvailable = isAvailable;
     if (isHot !== undefined) updates.isHot = isHot;
+    if (botPrice !== undefined) updates.botPrice = botPrice;
 
     if (botEnabled !== undefined) {
       if (botEnabled) {

@@ -19,7 +19,7 @@ const initiateFunding = async (req, res) => {
     const monnifyApiKey      = cfg.monnifyApiKey      || process.env.MONNIFY_API_KEY      || "";
     const monnifySecretKey   = cfg.monnifySecretKey   || process.env.MONNIFY_SECRET_KEY   || "";
     const monnifyContractCode= cfg.monnifyContractCode|| process.env.MONNIFY_CONTRACT_CODE|| "";
-    const baseUrl            = cfg.monnifyBaseUrl     || process.env.MONNIFY_BASE_URL     || "https://api.monnify.com";
+    const baseUrl            = (cfg.monnifyBaseUrl   || process.env.MONNIFY_BASE_URL     || "https://api.monnify.com").replace(/\/+$/, "");
     const frontendUrl        = cfg.frontendUrl        || process.env.FRONTEND_URL         || "";
 
     const apiKey = Buffer.from(`${monnifyApiKey}:${monnifySecretKey}`).toString("base64");
@@ -103,7 +103,7 @@ const createReservedAccount = async (req, res) => {
     const monnifyApiKey       = cfg.monnifyApiKey       || process.env.MONNIFY_API_KEY       || "";
     const monnifySecretKey    = cfg.monnifySecretKey    || process.env.MONNIFY_SECRET_KEY    || "";
     const monnifyContractCode = cfg.monnifyContractCode || process.env.MONNIFY_CONTRACT_CODE || "";
-    const baseUrl             = cfg.monnifyBaseUrl      || process.env.MONNIFY_BASE_URL      || "https://api.monnify.com";
+    const baseUrl             = (cfg.monnifyBaseUrl    || process.env.MONNIFY_BASE_URL      || "https://api.monnify.com").replace(/\/+$/, "");
 
     const apiKey = Buffer.from(`${monnifyApiKey}:${monnifySecretKey}`).toString("base64");
     const { data: authData } = await axios.post(`${baseUrl}/api/v1/auth/login`, {}, {

@@ -7,7 +7,7 @@ const User = require("../Models/userModel");
 const Plan = require("../Models/planModel");
 const { sendWhatsAppMessage, sendWhatsAppButtons, sendWhatsAppList, apiCall } = require("../Utils/whatsappHelper");
 const { getBotNotification } = require("../Utils/botNotifications");
-const { initiateGuestMonnifyPayment } = require("../Utils/monnifyPayment");
+const { initiateGuestMonnifyPayment, checkMonnifyPaymentStatus } = require("../Utils/monnifyPayment");
 const { initiateGuestPayment, fulfillGuestOrder, getBotToken } = require("./whatsappGuestOrderHelper");
 
 const NETWORKS = ["MTN", "AIRTEL", "GLO", "9MOBILE"];
@@ -159,7 +159,7 @@ const handleFundAmountInput = async (to, session, input, guest) => {
       `💳 *Fund Your Wallet*\n\nPay ₦${amount.toLocaleString()} to:\nBank: ${bankName}\nAccount Number: ${accountNumber}\n\nYour wallet is credited automatically once payment is received.`,
     );
   } catch (e) {
-    console.error("[handleFundAmountInput]", e?.response?.data || e.message);
+    console.error(`[handleFundAmountInput] failed at step [${e.monnifyStep || "unknown"}]:`, e?.response?.data || e.message);
     await sendWhatsAppMessage(to, "Unable to generate a payment account right now. Please try again later.");
   }
 };
@@ -177,14 +177,30 @@ const handleDataPhoneInput = async (to, session, input) => {
   const phone = input.replace(/\D/g, "");
   if (!/^0\d{10}$/.test(phone)) return sendWhatsAppMessage(to, "Please enter a valid 11-digit phone number (e.g. 08012345678):");
 
-  const plans = await Plan.find({ botEnabled: true, isAvailable: true });
+  session.context.phone = phone;
+  session.state = "DATA_NETWORK";
+  session.markModified("context");
+  await session.save();
+
+  await sendWhatsAppList(to, "Select network:", "Choose Network", [
+    {
+      title: "Networks",
+      rows: NETWORKS.map((n) => ({ id: n, title: n === "9MOBILE" ? "9mobile" : n.charAt(0) + n.slice(1).toLowerCase(), description: "" })),
+    },
+  ]);
+};
+
+const handleDataNetwork = async (to, session, networkId) => {
+  if (!NETWORKS.includes(networkId)) return sendWhatsAppMessage(to, "Invalid network. Type MENU to start over.");
+
+  const plans = await Plan.find({ botEnabled: true, isAvailable: true, network: networkId });
   if (!plans.length) {
     await resetToIdle(session);
-    return sendWhatsAppMessage(to, "No data plans are available right now. Please try again later.");
+    return sendWhatsAppMessage(to, `No ${networkId} data plans are available right now. Please try again later.`);
   }
   const categories = [...new Set(plans.map((p) => p.planCategory || "Other"))];
 
-  session.context.phone = phone;
+  session.context.network = networkId;
   session.context.categories = categories;
   session.state = "DATA_CATEGORY";
   session.markModified("context");
@@ -193,11 +209,11 @@ const handleDataPhoneInput = async (to, session, input) => {
   if (categories.length <= 3) {
     await sendWhatsAppButtons(
       to,
-      "Choose a data category:",
+      `Choose a ${networkId} data category:`,
       categories.map((c, i) => ({ id: `CAT_${i}`, title: c })),
     );
   } else {
-    await sendWhatsAppList(to, "Choose a data category:", "View Categories", [
+    await sendWhatsAppList(to, `Choose a ${networkId} data category:`, "View Categories", [
       { title: "Categories", rows: categories.slice(0, 10).map((c, i) => ({ id: `CAT_${i}`, title: c, description: "" })) },
     ]);
   }
@@ -209,7 +225,7 @@ const handleDataCategory = async (to, session, categoryId) => {
   const category = categories[idx];
   if (category === undefined) return sendWhatsAppMessage(to, "Invalid selection. Type MENU to start over.");
 
-  const plans = await Plan.find({ botEnabled: true, isAvailable: true, planCategory: category })
+  const plans = await Plan.find({ botEnabled: true, isAvailable: true, planCategory: category, network: session.context.network })
     .sort({ sellingPrice: 1 })
     .limit(10);
   if (!plans.length) return sendWhatsAppMessage(to, "No plans in this category. Type MENU to start over.");
@@ -225,7 +241,7 @@ const handleDataCategory = async (to, session, categoryId) => {
       rows: plans.map((p) => ({
         id: `PLAN_${p.planId}`,
         title: String(p.planName).slice(0, 24),
-        description: `₦${p.sellingPrice} — ${p.network}`,
+        description: `₦${p.botPrice > 0 ? p.botPrice : p.sellingPrice} — ${p.network}`,
       })),
     },
   ]);
@@ -238,7 +254,11 @@ const handleDataPlanSelect = async (to, session, planRowId, participant) => {
   const plan = await Plan.findOne({ planId, isAvailable: true, botEnabled: true });
   if (!plan) return sendWhatsAppMessage(to, "Plan not available. Type MENU to start over.");
 
-  const price = participant.type === "registered" ? resolvePrice(plan, participant.user) : plan.sellingPrice;
+  // botPrice is an optional per-plan override the admin sets specifically for
+  // bot sales — when set it takes priority over normal reseller/api/selling pricing.
+  const price = plan.botPrice > 0
+    ? plan.botPrice
+    : participant.type === "registered" ? resolvePrice(plan, participant.user) : plan.sellingPrice;
 
   session.context.planId = plan.planId;
   session.context.price = price;
@@ -462,9 +482,28 @@ const handleAwaitingPayment = async (to, session, guest, inputUpper) => {
     if (order.monnifyAmount === 0) {
       await fulfillGuestOrder(order, 0);
       await resetToIdle(session);
-    } else {
-      await sendWhatsAppMessage(to, "⏳ Payment verification in progress. We'll notify you once confirmed.");
+      return;
     }
+
+    // Actively check Monnify's own record instead of only waiting for their
+    // webhook — otherwise the guest is stuck here forever if the webhook is
+    // slow, misconfigured, or never arrives.
+    try {
+      const status = await checkMonnifyPaymentStatus(order.monnifyReference);
+      const paid = status?.paymentStatus === "PAID" || status?.paymentStatus === "OVERPAID";
+      if (paid) {
+        await fulfillGuestOrder(order, status?.amountPaid || order.monnifyAmount);
+        await resetToIdle(session);
+        return;
+      }
+    } catch (e) {
+      console.error(`[handleAwaitingPayment] status check failed at step [${e.monnifyStep || "unknown"}]:`, e?.response?.data || e.message);
+    }
+
+    await sendWhatsAppMessage(
+      to,
+      "⏳ We haven't received your payment yet. If you've just paid, give it a moment and reply *PAID* again — or reply *CANCEL* to abort.",
+    );
     return;
   }
 
@@ -597,6 +636,7 @@ const handleMessage = async (from, messageBody, messageType, buttonId, profileNa
     case "FUND_AMOUNT": return handleFundAmountInput(from, session, input, participant.guest);
 
     case "DATA_PHONE": return handleDataPhoneInput(from, session, input);
+    case "DATA_NETWORK": return handleDataNetwork(from, session, inputUpper);
     case "DATA_CATEGORY": return handleDataCategory(from, session, inputUpper);
     case "DATA_PLANS": return handleDataPlanSelect(from, session, inputUpper, participant);
     case "DATA_CONFIRM":
