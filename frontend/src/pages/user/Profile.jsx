@@ -1,4 +1,4 @@
-import { useState } from 'react'
+import { useState, useEffect } from 'react'
 import { useMutation, useQueryClient } from '@tanstack/react-query'
 import toast from 'react-hot-toast'
 import { useAuth } from '../../context/AuthContext'
@@ -7,7 +7,7 @@ import { errMsg } from '../../services/api'
 import Card from '../../components/ui/Card'
 import Input from '../../components/ui/Input'
 import Button from '../../components/ui/Button'
-import { Copy, Building2, ShieldCheck, ShieldOff } from 'lucide-react'
+import { Copy, Building2, ShieldCheck, ShieldOff, MessageCircle } from 'lucide-react'
 
 export default function Profile() {
   const { user, setUser } = useAuth()
@@ -77,6 +77,32 @@ export default function Profile() {
   const { mutate: requestAccount, isPending: requesting } = useMutation({
     mutationFn: authService.createReservedAccount,
     onSuccess: ({ data }) => { toast.success(data.msg); setUser(data.user) },
+    onError: (err) => toast.error(errMsg(err)),
+  })
+
+  const [linkCode, setLinkCode] = useState(null) // { code, expiresAt }
+  const [secondsLeft, setSecondsLeft] = useState(0)
+
+  useEffect(() => {
+    if (!linkCode?.expiresAt) return
+    const tick = () => setSecondsLeft(Math.max(0, Math.round((new Date(linkCode.expiresAt) - Date.now()) / 1000)))
+    tick()
+    const id = setInterval(tick, 1000)
+    return () => clearInterval(id)
+  }, [linkCode])
+
+  const { mutate: genLinkCode, isPending: generatingLinkCode } = useMutation({
+    mutationFn: authService.generateWhatsappLinkCode,
+    onSuccess: ({ data }) => setLinkCode(data),
+    onError: (err) => toast.error(errMsg(err)),
+  })
+
+  const { mutate: unlinkWhatsapp, isPending: unlinkingWhatsapp } = useMutation({
+    mutationFn: authService.unlinkWhatsapp,
+    onSuccess: ({ data }) => {
+      toast.success(data.msg || 'WhatsApp unlinked')
+      setUser(u => ({ ...u, whatsappNumber: null }))
+    },
     onError: (err) => toast.error(errMsg(err)),
   })
 
@@ -197,6 +223,47 @@ export default function Profile() {
               <p className="text-sm text-gray-500">No dedicated account yet.</p>
               <Button loading={requesting} onClick={() => requestAccount()}>
                 Request Dedicated Account
+              </Button>
+            </div>
+          )}
+        </Card.Body>
+      </Card>
+
+      <Card>
+        <Card.Header>
+          <div className="flex items-center gap-2"><MessageCircle size={16} />WhatsApp Bot</div>
+        </Card.Header>
+        <Card.Body className="space-y-3">
+          {user?.whatsappNumber ? (
+            <>
+              <div className="flex items-center justify-between p-3 bg-gray-50 rounded-lg">
+                <div>
+                  <p className="text-xs text-gray-500">Linked number</p>
+                  <p className="font-medium text-gray-900">{user.whatsappNumber}</p>
+                </div>
+                <Button variant="outline" size="sm" loading={unlinkingWhatsapp} onClick={() => unlinkWhatsapp()}>
+                  Unlink
+                </Button>
+              </div>
+            </>
+          ) : linkCode && secondsLeft > 0 ? (
+            <div className="space-y-2">
+              <p className="text-sm text-gray-500">Open WhatsApp, message the bot, and send:</p>
+              <div className="flex items-center gap-2">
+                <p className="font-mono font-bold text-lg tracking-widest bg-gray-50 border border-gray-200 rounded-lg px-3 py-2 flex-1">
+                  LINK {linkCode.code}
+                </p>
+                <button onClick={() => { navigator.clipboard.writeText(`LINK ${linkCode.code}`); toast.success('Copied!') }} className="p-2 rounded-lg hover:bg-gray-100 border border-gray-200">
+                  <Copy size={14} />
+                </button>
+              </div>
+              <p className="text-xs text-gray-400">Expires in {Math.floor(secondsLeft / 60)}:{String(secondsLeft % 60).padStart(2, '0')}</p>
+            </div>
+          ) : (
+            <div className="space-y-3">
+              <p className="text-sm text-gray-500">Link your WhatsApp number to buy data, airtime and electricity directly from the bot.</p>
+              <Button size="sm" loading={generatingLinkCode} onClick={() => genLinkCode()}>
+                Generate Link Code
               </Button>
             </div>
           )}

@@ -183,7 +183,7 @@ const getAdminPlans = async (req, res) => {
 
 const updatePlanPrice = async (req, res) => {
   const { id } = req.params;
-  const { sellingPrice, resellerPrice, apiPrice, isAvailable, isHot } = req.body;
+  const { sellingPrice, resellerPrice, apiPrice, isAvailable, isHot, botEnabled } = req.body;
   try {
     const updates = {};
     if (sellingPrice !== undefined) updates.sellingPrice = sellingPrice;
@@ -191,6 +191,22 @@ const updatePlanPrice = async (req, res) => {
     if (apiPrice !== undefined) updates.apiPrice = apiPrice;
     if (isAvailable !== undefined) updates.isAvailable = isAvailable;
     if (isHot !== undefined) updates.isHot = isHot;
+
+    if (botEnabled !== undefined) {
+      if (botEnabled) {
+        const plan = await Plan.findById(id);
+        if (!plan) return res.status(404).json({ msg: "Plan not found" });
+        const count = await Plan.countDocuments({
+          _id: { $ne: id },
+          botEnabled: true,
+          network: plan.network,
+          planCategory: plan.planCategory,
+        });
+        if (count >= 10) return res.status(400).json({ msg: "Max 10 bot-enabled plans per category" });
+      }
+      updates.botEnabled = botEnabled;
+    }
+
     await Plan.updateOne({ _id: id }, { $set: updates });
     res.status(200).json({ msg: "Plan updated" });
   } catch (e) {
@@ -361,6 +377,7 @@ const updateSettings = async (req, res) => {
     "monnifyApiKey", "monnifySecretKey", "monnifyContractCode", "monnifyBaseUrl", "frontendUrl",
     "smtpHost", "smtpPort", "smtpUser", "smtpPass", "smtpFrom",
     "billstackApi", "billstackSecret", "billstackBanks",
+    "whatsappBotToken", "whatsappPhoneId", "whatsappVerifyToken", "botWalletUserId", "botNotifications",
   ];
   const updates = {};
   allowed.forEach((k) => { if (req.body[k] !== undefined) updates[k] = req.body[k]; });

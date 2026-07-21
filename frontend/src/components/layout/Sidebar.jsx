@@ -4,7 +4,7 @@ import { useTheme } from '../../context/ThemeContext'
 import {
   LayoutDashboard, Wifi, Phone, Zap, Tv, CreditCard, Receipt,
   User, DollarSign, Users, BarChart3, Settings, Bell, Tag, X,
-  LogOut, ShieldCheck, UserCircle, Megaphone, Code2, ArrowLeftRight,
+  LogOut, ShieldCheck, UserCircle, Megaphone, Code2, ArrowLeftRight, MessageCircle,
 } from 'lucide-react'
 
 const userNav = [
@@ -29,6 +29,7 @@ const adminNav = [
   { to: '/admin/coupons',       icon: Tag,       label: 'Coupons' },
   { to: '/admin/notifications', icon: Bell,      label: 'Notifications' },
   { to: '/admin/broadcast',     icon: Megaphone, label: 'Broadcast' },
+  { to: '/admin/whatsapp',      icon: MessageCircle, label: 'WhatsApp Bot' },
   { to: '/admin/settings',      icon: Settings,  label: 'Settings' },
 ]
 

@@ -280,4 +280,58 @@ const resetPassword = async (req, res) => {
   }
 };
 
-module.exports = { register, login, getProfile, changePassword, generateApiKey, updateProfile, redeemCoupon, getTransactions, getUserStats, forgotPassword, resetPassword, setPin, removePin };
+const generateWhatsappLinkCode = async (req, res) => {
+  try {
+    const code = String(Math.floor(100000 + Math.random() * 900000));
+    const hash = crypto.createHash("sha256").update(code).digest("hex");
+    const expiresAt = new Date(Date.now() + 5 * 60 * 1000);
+    await User.updateOne(
+      { _id: req.user.userId },
+      { whatsappLinkCode: hash, whatsappLinkCodeExpires: expiresAt },
+    );
+    res.status(200).json({ code, expiresAt });
+  } catch (error) {
+    res.status(500).json({ msg: "Something went wrong" });
+  }
+};
+
+const unlinkWhatsapp = async (req, res) => {
+  try {
+    const user = await User.findById(req.user.userId);
+    if (!user) return res.status(404).json({ msg: "User not found" });
+    const phoneNumber = user.whatsappNumber;
+
+    await User.updateOne(
+      { _id: user._id },
+      { $unset: { whatsappNumber: 1, whatsappLinkCode: 1, whatsappLinkCodeExpires: 1 } },
+    );
+
+    if (phoneNumber) {
+      try {
+        const Conversation = require("../Models/Conversation");
+        const GuestUser = require("../Models/GuestUser");
+        const session = await Conversation.findOne({ phoneNumber });
+        if (session) {
+          const guest = await GuestUser.findOneAndUpdate(
+            { phoneNumber },
+            { $setOnInsert: { phoneNumber }, $set: { lastInteractedAt: new Date() } },
+            { upsert: true, new: true },
+          );
+          session.userId = null;
+          session.guestId = guest._id;
+          session.state = "IDLE";
+          session.context = {};
+          await session.save();
+        }
+      } catch (e) {
+        console.error("[unlinkWhatsapp] session cleanup failed:", e.message);
+      }
+    }
+
+    res.status(200).json({ msg: "WhatsApp unlinked successfully" });
+  } catch (error) {
+    res.status(500).json({ msg: "Something went wrong" });
+  }
+};
+
+module.exports = { register, login, getProfile, changePassword, generateApiKey, updateProfile, redeemCoupon, getTransactions, getUserStats, forgotPassword, resetPassword, setPin, removePin, generateWhatsappLinkCode, unlinkWhatsapp };

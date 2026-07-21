@@ -16,4 +16,6 @@ export const authService = {
   setPin: (d) => api.post("/auth/set-pin", d),
   removePin: () => api.post("/auth/remove-pin"),
   getStats: () => api.get("/auth/stats"),
+  generateWhatsappLinkCode: () => api.post("/auth/whatsapp/link-code"),
+  unlinkWhatsapp: () => api.delete("/auth/whatsapp/unlink"),
 };

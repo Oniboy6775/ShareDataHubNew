@@ -1,7 +1,7 @@
 import { useState, useMemo } from 'react'
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
 import toast from 'react-hot-toast'
-import { Flame, ToggleLeft, ToggleRight } from 'lucide-react'
+import { Flame, ToggleLeft, ToggleRight, MessageCircle } from 'lucide-react'
 import { adminService } from '../../services/admin.service'
 import { errMsg, naira } from '../../services/api'
 import Card from '../../components/ui/Card'
@@ -72,6 +72,10 @@ export default function AdminPlans() {
 
   const toggleAvailable = (plan) => {
     updatePlan({ id: plan._id, d: { isAvailable: !plan.isAvailable } })
+  }
+
+  const toggleBotEnabled = (plan) => {
+    updatePlan({ id: plan._id, d: { botEnabled: !plan.botEnabled } })
   }
 
   const openEdit = (plan) => {
@@ -156,6 +160,7 @@ export default function AdminPlans() {
                 <Table.Th>Profit</Table.Th>
                 <Table.Th>Status</Table.Th>
                 <Table.Th>Hot</Table.Th>
+                <Table.Th>Bot</Table.Th>
                 <Table.Th>Action</Table.Th>
               </Table.Row>
             </Table.Head>
@@ -203,6 +208,15 @@ export default function AdminPlans() {
                         className={`p-1.5 rounded-lg transition-colors ${p.isHot ? 'text-orange-500 bg-orange-50 hover:bg-orange-100' : 'text-gray-300 hover:text-orange-400 hover:bg-orange-50'}`}
                       >
                         <Flame size={16} />
+                      </button>
+                    </Table.Td>
+                    <Table.Td>
+                      <button
+                        onClick={() => toggleBotEnabled(p)}
+                        title={p.botEnabled ? 'Remove from WhatsApp bot' : 'Enable for WhatsApp bot'}
+                        className={`p-1.5 rounded-lg transition-colors ${p.botEnabled ? 'text-green-600 bg-green-50 hover:bg-green-100' : 'text-gray-300 hover:text-green-500 hover:bg-green-50'}`}
+                      >
+                        <MessageCircle size={16} />
                       </button>
                     </Table.Td>
                     <Table.Td>

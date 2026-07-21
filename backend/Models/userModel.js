@@ -51,6 +51,9 @@ const userSchema = new mongoose.Schema({
   isSuspended: { type: Boolean, default: false },
   resetToken: { type: String },
   resetTokenExpiry: { type: Date },
+  whatsappNumber: { type: String },
+  whatsappLinkCode: { type: String },
+  whatsappLinkCodeExpires: { type: Date },
   createdAt: { type: Date, default: Date.now },
 });
 

@@ -12,6 +12,7 @@ const planSchema = new mongoose.Schema({
   apiPrice: { type: Number, default: 0 },
   isAvailable: { type: Boolean, default: true },
   isHot: { type: Boolean, default: false },
+  botEnabled: { type: Boolean, default: false },
 });
 
 module.exports = mongoose.model("Plan", planSchema);

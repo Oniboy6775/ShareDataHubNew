@@ -33,6 +33,12 @@ const settingsSchema = new mongoose.Schema({
   billstackApi:       { type: String, default: "" },
   billstackSecret:    { type: String, default: "" },
   billstackBanks:     { type: String, default: "PALMPAY,MONIEPOINT,WEMA" },
+  // WhatsApp bot
+  whatsappBotToken:    { type: String, default: "" },
+  whatsappPhoneId:     { type: String, default: "" },
+  whatsappVerifyToken: { type: String, default: "" },
+  botWalletUserId:     { type: String, default: "" },
+  botNotifications:    { type: mongoose.Schema.Types.Mixed, default: {} },
 });
 
 settingsSchema.statics.getSingleton = async function () {

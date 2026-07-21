@@ -32,6 +32,7 @@ import AdminSettings from './pages/admin/AdminSettings'
 import AdminUserPricing from './pages/admin/AdminUserPricing'
 import AdminBroadcast from './pages/admin/AdminBroadcast'
 import AdminTransfer from './pages/admin/AdminTransfer'
+import AdminWhatsApp from './pages/admin/AdminWhatsApp'
 
 function PrivateRoute({ children }) {
   const { user, loading } = useAuth()
@@ -92,6 +93,7 @@ export default function App() {
           <Route path="/admin/users/:id/pricing"  element={<AdminUserPricing />} />
           <Route path="/admin/broadcast"          element={<AdminBroadcast />} />
           <Route path="/admin/transfer"           element={<AdminTransfer />} />
+          <Route path="/admin/whatsapp"           element={<AdminWhatsApp />} />
         </Route>
 
         <Route path="*" element={<Navigate to="/" replace />} />
