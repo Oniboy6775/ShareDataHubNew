@@ -60,7 +60,7 @@ export default function AdminSettings() {
   const updateTheme = useUpdateTheme()
   const [tab, setTab] = useState('general')
 
-  const [form, setForm] = useState({ registrationBonus: '', mainPlatformUrl: '', mainPlatformApiKey: '', googleFormUrl: '' })
+  const [form, setForm] = useState({ registrationBonus: '', mainPlatformUrl: '', mainPlatformApiKey: '', googleFormUrl: '', monnifyChargePercent: '', monnifyChargeCap: '' })
   const [themeForm, setThemeForm] = useState({
     themeSiteName: '', themeLogoUrl: '', themeSupportPhone: '', themeChannelLink: '',
     themeNavbar: '', themePrimary: '', themeSecondary: '', themeDark: '', themeDarker: '', themeLight: '',
@@ -88,6 +88,8 @@ export default function AdminSettings() {
       mainPlatformUrl:   data.mainPlatformUrl   ?? '',
       mainPlatformApiKey: data.mainPlatformApiKey ?? '',
       googleFormUrl: data.googleFormUrl ?? '',
+      monnifyChargePercent: data.monnifyChargePercent ?? '',
+      monnifyChargeCap: data.monnifyChargeCap ?? '',
     })
     setThemeForm({
       themeSiteName:     data.themeSiteName     ?? '',
@@ -391,6 +393,39 @@ export default function AdminSettings() {
                   />
                 </div>
               ))}
+            </div>
+            <div className="pt-2 border-t border-gray-100">
+              <p className="text-xs font-semibold text-gray-500 uppercase tracking-wide mb-3">Monnify Transaction Charge</p>
+              <p className="text-xs text-gray-400 mb-3">Used by the WhatsApp bot to estimate the settlement amount when a guest replies PAID before Monnify's webhook confirms the real settled amount. Same percent-capped-by-flat-amount pattern Monnify actually charges.</p>
+              <div className="grid grid-cols-2 gap-4">
+                <Input
+                  label="Charge (%)"
+                  type="number"
+                  step="0.01"
+                  placeholder="0.5"
+                  value={form.monnifyChargePercent}
+                  onChange={set('monnifyChargePercent')}
+                />
+                <Input
+                  label="Capped at (₦)"
+                  type="number"
+                  placeholder="50"
+                  value={form.monnifyChargeCap}
+                  onChange={set('monnifyChargeCap')}
+                />
+              </div>
+              <Button
+                size="sm"
+                variant="outline"
+                className="mt-3"
+                loading={savingGeneral}
+                onClick={() => saveGeneral({
+                  monnifyChargePercent: Number(form.monnifyChargePercent) || 0,
+                  monnifyChargeCap: Number(form.monnifyChargeCap) || 0,
+                })}
+              >
+                Save Charge Settings
+              </Button>
             </div>
             <div className="pt-2 border-t border-gray-100">
               <p className="text-xs font-semibold text-gray-500 uppercase tracking-wide mb-3">BillStack Virtual Accounts</p>
