@@ -2,9 +2,6 @@ const express = require("express");
 const router = express.Router();
 const Settings = require("../Models/settingsModel");
 const GuestPendingOrder = require("../Models/GuestPendingOrder");
-const Conversation = require("../Models/Conversation");
-const GuestUser = require("../Models/GuestUser");
-const { sendWhatsAppMessage } = require("../Utils/whatsappHelper");
 const {
   fulfillGuestOrder,
 } = require("../Controllers/whatsappGuestOrderHelper");
@@ -58,7 +55,10 @@ router.post("/webhook", (req, res) => {
   }
 });
 
-// Monnify webhook — fulfills guest orders and wallet top-ups
+// Monnify webhook — fulfills guest orders paid by real bank transfer.
+// (No standalone wallet top-up exists — guests only pay via Monnify at
+// purchase time, so every SUCCESSFUL_TRANSACTION here must match a
+// GuestPendingOrder or there's nothing to do.)
 router.post("/monnify-webhook", (req, res) => {
   res.sendStatus(200);
   (async () => {
@@ -70,36 +70,12 @@ router.post("/monnify-webhook", (req, res) => {
       )
         return;
 
-      const reference = eventData.paymentReference;
-      const settlementAmount = eventData.settlementAmount;
-
       const order = await GuestPendingOrder.findOne({
-        monnifyReference: reference,
+        monnifyReference: eventData.paymentReference,
       });
-      if (order) {
-        if (order.status === "pending")
-          await fulfillGuestOrder(order, settlementAmount);
-        return;
+      if (order && order.status === "pending") {
+        await fulfillGuestOrder(order, eventData.settlementAmount);
       }
-
-      // No matching order — check if this is a wallet top-up
-      const session = await Conversation.findOne({
-        "context.topupRef": reference,
-      });
-      if (!session) return;
-      const guest = await GuestUser.findOneAndUpdate(
-        { phoneNumber: session.phoneNumber },
-        { $inc: { balance: settlementAmount } },
-        { new: true },
-      );
-      if (!guest) return;
-      session.context.topupRef = null;
-      session.markModified("context");
-      await session.save();
-      await sendWhatsAppMessage(
-        session.phoneNumber,
-        `✅ Wallet funded with ₦${settlementAmount.toLocaleString()}.\n\nNew balance: ₦${guest.balance.toLocaleString()}`,
-      );
     } catch (e) {
       console.error("[monnify-webhook]", e.message);
     }

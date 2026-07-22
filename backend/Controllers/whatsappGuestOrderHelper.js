@@ -114,14 +114,12 @@ const initiateGuestPayment = async (
   await sendWhatsAppMessage(to, msg);
 };
 
-const _failOrder = async (order, guest, linkedUser, botUser, reason) => {
+// NOTE: any Monnify settlement already credited to the bot wallet is NOT
+// reversed here — that cash genuinely arrived and stays in the bot wallet's
+// shared float pool. The guest is refunded via their own ledger instead,
+// which they can spend against that same pool on a future attempt.
+const _failOrder = async (order, guest, linkedUser, reason) => {
   try {
-    if (order.guestBalanceUsed > 0 && botUser) {
-      await User.updateOne(
-        { _id: botUser._id },
-        { $inc: { balance: -order.guestBalanceUsed } },
-      );
-    }
     if (guest) {
       await GuestUser.updateOne(
         { _id: guest._id },
@@ -146,7 +144,17 @@ const _failOrder = async (order, guest, linkedUser, botUser, reason) => {
 };
 
 const fulfillGuestOrder = async (order, settlementAmount) => {
-  if (order.status !== "pending") return;
+  // Atomic claim — the webhook and the guest's own "PAID" active-check can
+  // both try to fulfill the same order around the same time. Whichever call
+  // wins this update proceeds; the other sees it's no longer "pending" and
+  // backs off, so the bot wallet is never credited twice for one order.
+  const claimed = await GuestPendingOrder.findOneAndUpdate(
+    { _id: order._id, status: "pending" },
+    { $set: { status: "processing" } },
+    { new: true },
+  );
+  if (!claimed) return;
+  order = claimed;
 
   const guest = await GuestUser.findOne({ phoneNumber: order.phoneNumber });
   const linkedUser = !guest
@@ -156,26 +164,33 @@ const fulfillGuestOrder = async (order, settlementAmount) => {
 
   if (!botUser) {
     console.error("[fulfillGuestOrder] bot wallet not configured");
+    // Put it back so a later retry (guest's next PAID reply) can pick it up
+    // once the admin configures botWalletUserId.
+    order.status = "pending";
+    await order.save();
     return;
   }
 
   try {
     if (order.guestBalanceUsed > 0) {
-      if (guest) {
-        await GuestUser.updateOne(
-          { _id: guest._id },
-          { $inc: { balance: -order.guestBalanceUsed } },
-        );
-      } else if (linkedUser) {
-        await User.updateOne(
-          { _id: linkedUser._id },
-          { $inc: { balance: -order.guestBalanceUsed } },
-        );
-      }
-      await User.updateOne(
-        { _id: botUser._id },
-        { $inc: { balance: order.guestBalanceUsed } },
+      const target = guest ? GuestUser : User;
+      await target.updateOne(
+        { _id: (guest || linkedUser)._id },
+        { $inc: { balance: -order.guestBalanceUsed } },
       );
+      // NOT re-credited to the bot wallet — that cash already entered the
+      // shared pool whenever this guest balance was originally earned
+      // (e.g. a refund from an earlier failed order), so crediting it again
+      // here would double-count real money that never moved just now.
+    }
+
+    if (order.monnifyAmount > 0) {
+      // Fresh real money for THIS purchase settles into the bot wallet's
+      // shared pool now, net of Monnify's own transaction charge — using
+      // whatever settlementAmount was actually reported (real webhook value,
+      // or the admin-configured charge estimate from an active PAID check).
+      const credited = settlementAmount || order.monnifyAmount;
+      await User.updateOne({ _id: botUser._id }, { $inc: { balance: credited } });
     }
 
     const token = await getBotToken();
@@ -209,7 +224,6 @@ const fulfillGuestOrder = async (order, settlementAmount) => {
       order,
       guest,
       linkedUser,
-      botUser,
       err?.response?.data?.msg || err.message,
     );
   }

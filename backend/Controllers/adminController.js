@@ -376,6 +376,7 @@ const updateSettings = async (req, res) => {
     "themeSiteName", "themeLogoUrl", "themeSupportPhone", "themeChannelLink",
     "themeNavbar", "themePrimary", "themeSecondary", "themeDark", "themeDarker", "themeLight",
     "monnifyApiKey", "monnifySecretKey", "monnifyContractCode", "monnifyBaseUrl", "frontendUrl",
+    "monnifyChargePercent", "monnifyChargeCap",
     "smtpHost", "smtpPort", "smtpUser", "smtpPass", "smtpFrom",
     "billstackApi", "billstackSecret", "billstackBanks",
     "whatsappBotToken", "whatsappPhoneId", "whatsappVerifyToken", "botWalletUserId", "botNotifications",

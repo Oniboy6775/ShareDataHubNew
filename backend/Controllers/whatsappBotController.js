@@ -5,9 +5,10 @@ const GuestUser = require("../Models/GuestUser");
 const GuestPendingOrder = require("../Models/GuestPendingOrder");
 const User = require("../Models/userModel");
 const Plan = require("../Models/planModel");
+const Settings = require("../Models/settingsModel");
 const { sendWhatsAppMessage, sendWhatsAppButtons, sendWhatsAppList, apiCall } = require("../Utils/whatsappHelper");
 const { getBotNotification } = require("../Utils/botNotifications");
-const { initiateGuestMonnifyPayment, checkMonnifyPaymentStatus } = require("../Utils/monnifyPayment");
+const { checkMonnifyPaymentStatus } = require("../Utils/monnifyPayment");
 const { initiateGuestPayment, fulfillGuestOrder, getBotToken } = require("./whatsappGuestOrderHelper");
 
 const NETWORKS = ["MTN", "AIRTEL", "GLO", "9MOBILE"];
@@ -69,7 +70,8 @@ const sendMainMenu = async (to, session, participant) => {
     { id: "MY_TRANS", title: "📋 My Transactions", description: "" },
   ];
   if (participant.type === "guest") {
-    accountRows.push({ id: "FUND_WALLET", title: "💳 Fund Wallet", description: "" });
+    // Guests can only pay via Monnify at purchase time — there's no
+    // standalone wallet top-up right now, so no Fund Wallet menu entry.
     accountRows.push({ id: "LINK_ACCOUNT", title: "🔗 Link Account", description: "" });
   } else if (participant.type === "registered") {
     accountRows.push({ id: "UNLINK_ACCOUNT", title: "🔓 Unlink Account", description: "" });
@@ -130,37 +132,6 @@ const handleTransactions = async (to, participant) => {
     if (!orders.length) return sendWhatsAppMessage(to, "You have no transactions yet.");
     const lines = orders.map((o) => `• ${o.serviceType.toUpperCase()} — ₦${o.totalAmount} — ${o.status}`).join("\n");
     await sendWhatsAppMessage(to, `📋 *Last ${orders.length} Orders*\n\n${lines}`);
-  }
-};
-
-const handleFundWallet = async (to, session) => {
-  session.state = "FUND_AMOUNT";
-  session.context = {};
-  await session.save();
-  await sendWhatsAppMessage(to, "💳 Enter the amount you'd like to fund (minimum ₦100):");
-};
-
-const handleFundAmountInput = async (to, session, input, guest) => {
-  const amount = parseFloat(String(input).replace(/[^\d.]/g, ""));
-  if (!amount || amount < 100) return sendWhatsAppMessage(to, "Please enter a valid amount (minimum ₦100):");
-  try {
-    const guestEmail = `${to}@bot.guest`;
-    const { paymentReference, accountNumber, bankName } = await initiateGuestMonnifyPayment(
-      amount,
-      guestEmail,
-      guest.profileName || to,
-    );
-    session.context = { topupRef: paymentReference };
-    session.state = "IDLE";
-    session.markModified("context");
-    await session.save();
-    await sendWhatsAppMessage(
-      to,
-      `💳 *Fund Your Wallet*\n\nPay ₦${amount.toLocaleString()} to:\nBank: ${bankName}\nAccount Number: ${accountNumber}\n\nYour wallet is credited automatically once payment is received.`,
-    );
-  } catch (e) {
-    console.error(`[handleFundAmountInput] failed at step [${e.monnifyStep || "unknown"}]:`, e?.response?.data || e.message);
-    await sendWhatsAppMessage(to, "Unable to generate a payment account right now. Please try again later.");
   }
 };
 
@@ -470,6 +441,19 @@ const handleElecConfirm = async (to, session, participant, user, guest) => {
 
 // ── Awaiting payment ─────────────────────────────────────────────────────────
 
+// Estimates the real settlement amount from a gross amountPaid, using the
+// admin-configured Monnify charge (percent, capped at a flat maximum — same
+// pattern as the existing BillStack webhook). Used only for the guest's
+// active PAID check; the real webhook always reports the true settlementAmount.
+const estimateSettlement = async (amountPaid) => {
+  const cfg = await Settings.getSingleton();
+  const percent = Number(cfg.monnifyChargePercent) || 0;
+  const cap = Number(cfg.monnifyChargeCap) || 0;
+  let charge = amountPaid * (percent / 100);
+  if (cap > 0 && charge > cap) charge = cap;
+  return Math.max(amountPaid - charge, 0);
+};
+
 const handleAwaitingPayment = async (to, session, guest, inputUpper) => {
   const orderId = session.context?.orderId;
   const order = orderId ? await GuestPendingOrder.findById(orderId) : null;
@@ -492,7 +476,14 @@ const handleAwaitingPayment = async (to, session, guest, inputUpper) => {
       const status = await checkMonnifyPaymentStatus(order.monnifyReference);
       const paid = status?.paymentStatus === "PAID" || status?.paymentStatus === "OVERPAID";
       if (paid) {
-        await fulfillGuestOrder(order, status?.amountPaid || order.monnifyAmount);
+        // Monnify's query response only gives the gross amountPaid, not the
+        // true fee-deducted settlementAmount — estimate it from the admin's
+        // configured charge so the bot wallet isn't overcredited. If the real
+        // webhook arrives later for this same order, fulfillGuestOrder's
+        // atomic claim guard means it's a no-op — no double credit.
+        const amountPaid = status?.amountPaid || order.monnifyAmount;
+        const estimatedSettlement = await estimateSettlement(amountPaid);
+        await fulfillGuestOrder(order, estimatedSettlement);
         await resetToIdle(session);
         return;
       }
@@ -625,15 +616,10 @@ const handleMessage = async (from, messageBody, messageType, buttonId, profileNa
         case "BUY_ELEC": return handleElecDisco(from, session, participant, null);
         case "CHECK_BAL": return handleBalance(from, participant);
         case "MY_TRANS": return handleTransactions(from, participant);
-        case "FUND_WALLET":
-          if (participant.type === "guest") return handleFundWallet(from, session);
-          return sendWhatsAppMessage(from, "Fund your wallet from the website.");
         case "LINK_ACCOUNT": return handleLinkAccount(from, session, participant);
         case "UNLINK_ACCOUNT": return handleUnlinkAccount(from, session, participant);
         default: return sendMainMenu(from, session, participant);
       }
-
-    case "FUND_AMOUNT": return handleFundAmountInput(from, session, input, participant.guest);
 
     case "DATA_PHONE": return handleDataPhoneInput(from, session, input);
     case "DATA_NETWORK": return handleDataNetwork(from, session, inputUpper);

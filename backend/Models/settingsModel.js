@@ -27,6 +27,12 @@ const settingsSchema = new mongoose.Schema({
   monnifySecretKey:   { type: String, default: "" },
   monnifyContractCode:{ type: String, default: "" },
   monnifyBaseUrl:     { type: String, default: "" },
+  // Monnify's own transaction charge — used to estimate the settlement amount
+  // when the bot actively checks payment status (before the real webhook,
+  // which reports the true settlementAmount, arrives). Same percent-capped-by-flat
+  // pattern as the existing BillStack webhook.
+  monnifyChargePercent: { type: Number, default: 0 },
+  monnifyChargeCap:     { type: Number, default: 0 },
   frontendUrl:        { type: String, default: "" },
   googleFormUrl:      { type: String, default: "" },
   // BillStack virtual accounts
